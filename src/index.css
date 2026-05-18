@@ -1,0 +1,31 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji';
+  /* Identidad CISVEN */
+  --color-cisven-blue: #004aad;
+  --color-cisven-dark: #1a1a1a;
+  --color-cisven-accent: #fbbf24;
+  --color-cisven-light: #f8fafc;
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    /* Cambiamos bg-zinc-50 por nuestra variable de luz de Cisven */
+    @apply min-h-dvh bg-[--color-cisven-light] text-zinc-900 font-sans;
+  }
+
+  #root {
+    @apply min-h-dvh flex flex-col;
+  }
+
+  /* Estilos globales para botones de la marca */
+  .btn-cisven {
+    @apply bg-[--color-cisven-blue] text-white rounded-lg px-6 py-3 font-semibold transition-all active:scale-95;
+  }
+}

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CISVEN - Sistema Operacional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // ==========================================
+        // VISTA: LANDING PAGE INITIAL
+        // ==========================================
+        const Landing = ({ setView }) => {
+            return (
+                <div className="min-h-screen bg-gradient-to-b from-[#004aad] to-blue-900 text-white flex flex-col justify-center items-center p-6 text-center">
+                    <h1 className="text-4xl font-black tracking-tight mb-2">CISVEN</h1>
+                    <p className="text-yellow-400 font-medium text-sm uppercase tracking-widest mb-8">Seguridad Automatizada</p>
+                    <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl max-w-sm mb-8 border border-white/10 text-left space-y-2 text-xs">
+                        <p>● Control operativo dinámico de hardware y tarifas.</p>
+                        <p>● Agenda móvil con tope máximo de 7 asistencias diarias.</p>
+                        <p>● Enrutamiento y asignación por técnico en terreno con persistencia.</p>
+                    </div>
+                    <div className="flex flex-col w-full max-w-xs gap-3 font-bold">
+                        <button onClick={() => setView('app-dashboard')} className="w-full bg-yellow-400 text-slate-900 py-4 rounded-xl shadow-lg text-sm">
+                            Ingresar como Cliente (App Móvil)
+                        </button>
+                        <button onClick={() => setView('admin-ops')} className="w-full bg-white/10 text-white py-3 rounded-xl border border-white/20 text-xs">
+                            Consola Administración
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // ENTORNO CLIENTE: ACCESO Y REGISTRO
+        // ==========================================
+        const ClientAuth = ({ users, onRegister, onLoginSuccess }) => {
+            const [isLogin, setIsLogin] = useState(true);
+            const [name, setName] = useState('');
+            const [rut, setRut] = useState('');
+            const [address, setAddress] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const sanitizedRut = rut.trim();
+                if (isLogin) {
+                    const found = users.find(u => u.rut.trim() === sanitizedRut);
+                    if (found) { onLoginSuccess(found); } 
+                    else { alert('RUT no registrado. Crea una cuenta en "Registrarse" o usa el RUT de prueba rápido 1-9.'); }
+                } else {
+                    if (!name || !sanitizedRut || !address) return alert('Complete todos los datos.');
+                    const exists = users.find(u => u.rut.trim() === sanitizedRut);
+                    if (exists) return alert('Este RUT ya existe.');
+                    
+                    const newUser = { 
+                        id: Date.now(), 
+                        name, 
+                        rut: sanitizedRut, 
+                        address, 
+                        contract: 'Monitoreo Comercial Estándar AI',
+                        installedHardware: 'Configuración Inicial: 4x Cámaras Básicas / 1x Central de Enlace',
+                        status: 'Activo'
+                    };
+                    onRegister(newUser);
+                    onLoginSuccess(newUser);
+                    alert('¡Cuenta creada con éxito!');
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50 flex flex-col justify-center max-w-md mx-auto p-6">
+                    <div className="bg-white p-6 rounded-2xl shadow-xl border space-y-4">
+                        <div className="flex justify-center border-b pb-2">
+                            <button type="button" onClick={() => setIsLogin(true)} className={`w-1/2 text-center py-2 text-xs font-bold ${isLogin ? 'text-[#004aad] border-b-2 border-[#004aad]' : 'text-gray-400'}`}>Iniciar Sesión</button>
+                            <button type="button" onClick={() => setIsLogin(false)} className={`w-1/2 text-center py-2 text-xs font-bold ${!isLogin ? 'text-[#004aad] border-b-2 border-[#004aad]' : 'text-gray-400'}`}>Registrarse</button>
+                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-3">
+                            {isLogin ? (
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase">RUT Registrado</label>
+                                    <input type="text" placeholder="Ej: 1-9" value={rut} onChange={e => setRut(e.target.value)} className="w-full p-3 border rounded-xl text-xs bg-gray-50 mt-1 focus:outline-none" required />
+                                </div>
+                            ) : (
+                                <>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase">Nombre o Razón Social</label>
+                                        <input type="text" placeholder="Ej: Minimarket Liana" value={name} onChange={e => setName(e.target.value)} className="w-full p-3 border rounded-xl text-xs bg-gray-50 mt-1 focus:outline-none" required />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase">Dirección Principal</label>
+                                        <input type="text" placeholder="Ej: Av. Vitacura 1234" value={address} onChange={e => setAddress(e.target.value)} className="w-full p-3 border rounded-xl text-xs bg-gray-50 mt-1 focus:outline-none" required />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase">RUT</label>
+                                        <input type="text" placeholder="Ej: 12345678-9" value={rut} onChange={e => setRut(e.target.value)} className="w-full p-3 border rounded-xl text-xs bg-gray-50 mt-1 focus:outline-none" required />
+                                    </div>
+                                </>
+                            )}
+                            <button type="submit" className="w-full bg-[#004aad] text-white py-3 rounded-xl font-bold text-xs shadow-md mt-2">
+                                {isLogin ? 'Validar Acceso Seguro' : 'Crear Cuenta'}
+                            </button>
+                        </form>
+                        {isLogin && <p className="text-[10px] text-center text-gray-400 font-medium">💡 RUT rápido de prueba: <strong className="underline">1-9</strong></p>}
+                    </div>
+                </div>
+            );
+        };
+
+        const ClientLayout = ({ children, setView, onLogout }) => {
+            return (
+                <div className="min-h-screen bg-gray-50 flex flex-col max-w-md mx-auto shadow-2xl relative border-x border-gray-100">
+                    <div className="flex-1 pb-24 overflow-y-auto">{children}</div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 h-20 grid grid-cols-5 items-center justify-center px-1 z-50">
+                        <button type="button" onClick={() => setView('app-dashboard')} className="flex flex-col items-center justify-center text-center"><span className="text-lg">🏠</span><span className="text-[9px] font-bold text-[#004aad]">Inicio</span></button>
+                        <button type="button" onClick={() => setView('app-getquote')} className="flex flex-col items-center justify-center text-center"><span className="text-lg">📦</span><span className="text-[9px] font-bold text-gray-400">Cotizar</span></button>
+                        <button type="button" onClick={() => setView('app-schedule')} className="flex flex-col items-center justify-center text-center"><span className="text-lg">📅</span><span className="text-[9px] font-bold text-gray-400">Citas</span></button>
+                        <button type="button" onClick={() => setView('app-sos')} className="flex flex-col items-center justify-center text-center"><span className="text-lg">🚨</span><span className="text-[9px] font-bold text-gray-400">S.O.S</span></button>
+                        <button type="button" onClick={onLogout} className="flex flex-col items-center justify-center text-center"><span className="text-lg">👤</span><span className="text-[9px] font-bold text-gray-400">Salir</span></button>
+                    </div>
+                </div>
+            );
+        };
+
+        const ClientHome = ({ currentUser }) => (
+            <div className="p-4 space-y-5">
+                <div className="text-center pt-4"><h1 className="text-2xl font-bold text-[#004aad]">CISVEN DASHBOARD</h1></div>
+                <div className="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-yellow-400 space-y-1">
+                    <p className="text-[#004aad] font-bold text-sm">Hola {currentUser?.name} 👋</p>
+                    <p className="text-[11px] text-gray-400">Contrato Vigente: <span className="font-semibold text-gray-700">{currentUser?.contract}</span></p>
+                    <p className="text-[11px] text-gray-500">📍 <span className="font-medium text-gray-700">{currentUser?.address}</span></p>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border space-y-2">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">🛠 nighttime; Mi Ficha e Inventario Técnico Instalado</p>
+                    <p className="text-xs text-gray-600 font-medium leading-relaxed bg-gray-50 p-2.5 rounded-lg border font-mono">
+                        {currentUser?.installedHardware || 'Ningún hardware registrado aún.'}
+                    </p>
+                </div>
+            </div>
+        );
+
+        // ==========================================
+        // COTIZADOR INDEPENDIENTE CON DESCUENTO A CERO REAL
+        // ==========================================
+        const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
+            const [step, setStep] = useState(1);
+            const [propertyType, setPropertyType] = useState('');
+            const [quoteAddress, setQuoteAddress] = useState(currentUser?.address || '');
+            const [meters, setMeters] = useState(15);
+            
+            const [cam1, setCam1] = useState(0);
+            const [cam2, setCam2] = useState(0);
+            const [cam3, setCam3] = useState(0);
+
+            const basePrice = propertyType === 'Empresa' ? 120000 : 65000;
+            const camPrice = 15000;
+            const total = basePrice + camPrice * meters;
+
+            return (
+                <div className="p-4 space-y-5">
+                    <div className="text-center pt-4"><h1 className="text-2xl font-bold text-[#004aad]">CISVEN COTIZADOR</h1></div>
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border-l-4 border-yellow-400 space-y-1">
+                        <p className="text-[#004aad] font-bold text-sm">Hola {currentUser?.name} 👋</p>
+                        <p className="text-[11px] text-gray-400">Contrato Vigente: <span className="font-semibold text-gray-700">{currentUser?.contract}</span></p>
+                        <p className="text-[11px] text-gray-500">📍 <span className="font-medium text-gray-700">{currentUser?.address}</span></p>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl shadow-sm border space-y-2">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">🛠️ Mi Ficha e Inventario Técnico Instalado</p>
+                        <p className="text-xs text-gray-600 font-medium leading-relaxed bg-gray-50 p-2.5 rounded-lg border font-mono">
+                            {currentUser?.installedHardware || 'Ningún hardware registrado aún.'}
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+        </script>
+</body>
+</html>
