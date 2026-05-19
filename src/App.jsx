@@ -22,33 +22,80 @@ export const BrandLogo = ({ size = "md" }) => (
 // PANTALLA DE BIENVENIDA (LANDING)
 // ==========================================
 function Landing({ setView }) {
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+
+  const handleAdminAccess = (e) => {
+    e.preventDefault();
+    if (adminPassword === 'cisven2026') {
+      setView('admin-ops');
+      setShowAdminLogin(false);
+      setAdminPassword('');
+    } else {
+      alert('🔒 Credencial de Central Incorrecta. Acceso Denegado.');
+      setAdminPassword('');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0b0f19] flex flex-col justify-center items-center p-6 text-center relative overflow-hidden font-sans">
       <div className="absolute w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-3xl -top-20 -left-20"></div>
+      
       <div className="space-y-2 mb-10 relative z-10">
         <BrandLogo size="lg" />
       </div>
-      <div className="bg-[#0f172a] p-5 rounded-2xl text-left text-xs mb-8 space-y-2 border border-slate-800 shadow-xl max-w-xs w-full">
-        <p className="text-blue-400 font-bold uppercase text-[9px] tracking-wider mb-1">Módulos de Control Técnico:</p>
-        <p className="text-slate-300">● Trazabilidad de hojas de ruta por instalador asignado.</p>
-        <p className="text-slate-300">● Inyección de bitácora histórica desde terreno.</p>
-        <p className="text-slate-300">● Despacho inmediato por coordenadas S.O.S.</p>
-      </div>
-      <div className="flex flex-col w-full max-w-xs gap-3 relative z-10">
-        <button onClick={() => setView('app-dashboard')} className="w-full bg-[#004aad] hover:bg-blue-600 text-white py-3.5 rounded-xl font-black text-xs tracking-wider uppercase shadow-lg shadow-blue-500/10 transition-all active:scale-95">
-          Ingresar como Cliente
-        </button>
-        <button onClick={() => setView('admin-ops')} className="w-full bg-slate-950 hover:bg-slate-900 text-slate-400 py-3 rounded-xl border border-slate-800 text-xs font-bold transition-all uppercase tracking-wider">
-          Consola Central (Admin)
-        </button>
-      </div>
+
+      {!showAdminLogin ? (
+        <>
+          <div className="bg-[#0f172a] p-5 rounded-2xl text-left text-xs mb-8 space-y-2 border border-slate-800 shadow-xl max-w-xs w-full animate-fadeIn">
+            <p className="text-blue-400 font-bold uppercase text-[9px] tracking-wider mb-1">Módulos de Control Técnico:</p>
+            <p className="text-slate-300">● Trazabilidad de hojas de ruta por instalador asignado.</p>
+            <p className="text-slate-300">● Inyección de bitácora histórica desde terreno.</p>
+            <p className="text-slate-300">● Despacho inmediato por coordenadas S.O.S.</p>
+          </div>
+
+          <div className="flex flex-col w-full max-w-xs gap-3 relative z-10">
+            <button onClick={() => setView('app-dashboard')} className="w-full bg-[#004aad] hover:bg-blue-600 text-white py-3.5 rounded-xl font-black text-xs tracking-wider uppercase shadow-lg shadow-blue-500/10 transition-all active:scale-95">
+              Ingresar como Cliente
+            </button>
+            <button onClick={() => setShowAdminLogin(true)} className="w-full bg-slate-950 hover:bg-slate-900 text-slate-400 py-3 rounded-xl border border-slate-800 text-xs font-bold transition-all uppercase tracking-wider">
+              Consola Central (Admin)
+            </button>
+          </div>
+        </>
+      ) : (
+        <form onSubmit={handleAdminAccess} className="bg-[#0f172a] p-6 rounded-2xl border border-slate-800 shadow-2xl max-w-xs w-full text-left space-y-4 animate-fadeIn relative z-10">
+          <div>
+            <h3 className="text-sm font-black text-white uppercase tracking-wide">Autenticación de Central</h3>
+            <p className="text-[10px] text-slate-500 mt-0.5">Módulo restringido para personal autorizado.</p>
+          </div>
+          
+          <div className="space-y-1">
+            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Contraseña Administrativa</label>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              value={adminPassword} 
+              onChange={e => setAdminPassword(e.target.value)} 
+              className="w-full p-2.5 bg-[#0b0f19] border border-slate-800 rounded-xl text-white text-xs font-bold focus:outline-none focus:border-blue-500"
+              required 
+              autoFocus
+            />
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={() => { setShowAdminLogin(false); setAdminPassword(''); }} className="w-1/3 bg-[#0b0f19] border border-slate-800 text-slate-400 text-[10px] font-bold rounded-xl py-2 uppercase">
+              Cancelar
+            </button>
+            <button type="submit" className="w-2/3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black rounded-xl py-2 uppercase tracking-wider">
+              Verificar Token
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
-
-// ==========================================
-// AUTENTICACIÓN Y REGISTRO DE ABONADOS
-// ==========================================
 function ClientAuth({ users, onRegister, onLoginSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
