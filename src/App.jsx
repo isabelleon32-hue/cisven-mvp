@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // ==========================================
-// 1. COMPONENTE DE LOGO CORPORATIVO REPLICADO (CISVEN VERDE OCÉANO)
+// 1. COMPONENTE DE LOGO CORPORATIVO (CISVEN)
 // ==========================================
 export const BrandLogo = ({ size = "md" }) => (
   <div className="flex flex-col items-center justify-center text-center font-sans select-none">
@@ -25,7 +25,7 @@ export const BrandLogo = ({ size = "md" }) => (
 );
 
 // ==========================================
-// 2. CONTROL DE ACCESO RESTRICTO POR ROLES SECURE GATE
+// 2. CONTROL DE ACCESO (LANDING GATE)
 // ==========================================
 function Landing({ setView }) {
   const [authMode, setAuthMode] = useState(null); 
@@ -57,8 +57,8 @@ function Landing({ setView }) {
           <div className="bg-[#0a3a37] p-5 rounded-2xl text-left text-xs mb-8 space-y-2.5 border border-teal-800/40 shadow-2xl max-w-xs w-full text-gray-200">
             <p className="text-teal-400 font-bold uppercase text-[9px] tracking-wider border-b border-teal-900 pb-1">Módulos del Sistema:</p>
             <p className="flex items-start gap-1.5"><span>•</span> Clientes: Cotización inteligente y botón S.O.S.</p>
-            <p className="flex items-start gap-1.5"><span>•</span> Central: Gestión de inventario y asignación.</p>
-            <p className="flex items-start gap-1.5"><span>•</span> Técnicos: Visualización de rutas con teléfono directo.</p>
+            <p className="flex items-start gap-1.5"><span>•</span> Central: Gestión y retorno técnico en tiempo real.</p>
+            <p className="flex items-start gap-1.5"><span>•</span> Técnicos: Cierre de rutas con reporte directo.</p>
           </div>
           
           <div className="flex flex-col w-full max-w-xs gap-3 relative z-10">
@@ -169,16 +169,21 @@ function ClientAuth({ users, onRegister, onLoginSuccess }) {
 }
 
 // ==========================================
-// 4. CONSOLA DE ADMINISTRACIÓN CENTRAL (ADMIN)
+// 4. CONSOLA DE ADMINISTRACIÓN CENTRAL (CON RETORNO TÉCNICO)
 // ==========================================
-function AdminDashboard({ setView, catalog, setCatalog, quotes, setQuotes, appointments, setAppointments, users, onAssignTech, onApproveQuote }) {
+function AdminDashboard({ setView, catalog, setCatalog, quotes, appointments, users, onAssignTech, onApproveQuote, onArchiveJob }) {
   const [tab, setTab] = useState('ops');
   const [selectedUserFolder, setSelectedUserFolder] = useState(null);
   
   const staff = ['Sin Asignar', 'Juan Pérez (Móvil 1)', 'Carlos Silva (Móvil 2)', 'Andrés León (Móvil 3)'];
 
+  // Separamos las citas activas de las que están esperando revisión del admin
+  const activeAppointments = appointments.filter(app => app.status !== 'Revisión Técnico');
+  const reviewAppointments = appointments.filter(app => app.status === 'Revisión Técnico');
+
   return (
     <div className="min-h-screen bg-[#042120] flex font-sans text-xs text-teal-100">
+      {/* Barra Lateral */}
       <div className="w-52 bg-[#0a3a37] border-r border-teal-900 p-4 flex flex-col justify-between flex-shrink-0 font-bold">
         <div className="space-y-6">
           <BrandLogo />
@@ -193,58 +198,103 @@ function AdminDashboard({ setView, catalog, setCatalog, quotes, setQuotes, appoi
         </button>
       </div>
 
+      {/* Panel Principal */}
       <div className="flex-1 p-6 overflow-y-auto space-y-4">
         <h1 className="text-base font-black text-white uppercase tracking-wider">
-          {tab === 'ops' && 'Mesa de Control de Incidentes'}
+          {tab === 'ops' && 'Mesa de Control de Incidentes y Despachos'}
           {tab === 'price' && 'Maestro de Inventario'}
           {tab === 'users' && !selectedUserFolder && 'Fichero General de Abonados'}
           {selectedUserFolder && `Expediente: ${selectedUserFolder.name}`}
         </h1>
 
         {tab === 'ops' && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
-              <h3 className="font-bold text-teal-400 border-b border-teal-900 pb-2 uppercase flex justify-between items-center">
-                <span>📦 Cotizaciones de Clientes</span>
-                <span className="bg-teal-950 text-teal-400 px-2.5 py-0.5 rounded-full font-black text-[10px]">{quotes.length}</span>
-              </h3>
-              {quotes.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin solicitudes pendientes</p> : quotes.map(q => (
-                <div key={q.id} className="p-3 bg-[#042120] border border-teal-900 rounded-xl flex flex-col space-y-2">
-                  <div>
-                    <p className="font-bold text-white text-sm">{q.user}</p>
-                    <p className="text-[#ecc245] font-black font-mono text-xs mt-0.5">${q.total.toLocaleString('es-CL')}</p>
-                    <p className="text-slate-400 font-mono text-[10px] mt-1">⚙️ Equipos: {q.cam}</p>
-                    <p className="text-[10px] text-teal-400 mt-0.5">📍 Ubicación: {q.address}</p>
-                    <p className="text-[10px] text-emerald-400 font-bold mt-1 bg-emerald-950/40 p-1 rounded border border-teal-900">
-                      📞 Teléfono Vinculado: <span className="underline font-mono text-white">{q.phone}</span>
-                    </p>
-                  </div>
-                  <button 
-                    type="button" 
-                    onClick={() => { onApproveQuote(q); alert('Aprobado. El despacho se inyectó al técnico con toda la información vinculada.'); }}
-                    className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider mt-1"
-                  >
-                    ✓ Aprobar y Despachar Instalador
-                  </button>
+          <div className="space-y-6">
+            {/* NUEVA SECCIÓN: CANAL DE RETORNO Y RETROALIMENTACIÓN DEL TÉCNICO */}
+            {reviewAppointments.length > 0 && (
+              <div className="bg-[#0f4d39] p-4 rounded-2xl border-2 border-emerald-500 shadow-2xl space-y-3">
+                <h3 className="font-black text-emerald-300 uppercase flex justify-between items-center text-xs tracking-wider animate-pulse">
+                  <span>📥 OBSERVACIONES TÉCNICAS POR REVISAR (RETORNO DE TERRENO)</span>
+                  <span className="bg-emerald-900 text-emerald-300 px-2.5 py-0.5 rounded-full font-black text-[10px]">{reviewAppointments.length}</span>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {reviewAppointments.map(app => (
+                    <div key={app.id} className="p-3 bg-[#042120] border border-emerald-600 rounded-xl space-y-2">
+                      <div className="text-[11px] space-y-1">
+                        <p className="font-black text-white text-xs">Abonado: {app.user}</p>
+                        <p className="text-teal-400">📍 Dirección: <span className="text-white font-medium">{app.address}</span></p>
+                        <p className="text-teal-400">👷 Cerrado por: <span className="text-[#ecc245] font-bold">{app.technician}</span></p>
+                        
+                        {/* RECUADRO CON LA INFORMACIÓN QUE RETORNA DESDE EL CELULAR DEL TÉCNICO */}
+                        <div className="mt-2 p-2.5 bg-emerald-950/80 border border-emerald-500/40 rounded-lg">
+                          <p className="text-[9px] font-black text-[#ecc245] uppercase tracking-wide">📝 Reporte del Instalador en Terreno:</p>
+                          <p className="text-emerald-200 font-bold italic text-xs mt-0.5">"{app.techObservation}"</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service);
+                            alert('Órden validada. La observación se archivó en la bitácora perpetua del cliente.');
+                          }}
+                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider"
+                        >
+                          ✓ Validar, Archivar Historial y Limpiar Mesa
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
 
-            <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
-              <h3 className="font-bold text-red-400 border-b border-teal-900 pb-2 uppercase">📅 Citas Técnicas y Rutas</h3>
-              {appointments.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin órdenes en tránsito.</p> : appointments.map(app => (
-                <div key={app.id} className="p-3 bg-[#042120] border border-teal-900 rounded-xl space-y-2">
-                  <div className="space-y-0.5">
-                    <p className="font-black text-white">{app.user} - <span className="text-[#ecc245]">"{app.service}"</span></p>
-                    <p className="text-[10px] text-teal-400">📍 Dirección: <span className="text-white font-bold">{app.address}</span></p>
-                    <p className="text-[10px] text-teal-400">📞 Contacto: <span className="text-teal-200 font-mono font-bold">{app.phone}</span></p>
-                    <p className="text-[10px] text-teal-500">¼ Operador Asignado: <span className="text-[#ecc245] font-bold underline">{app.technician || 'Sin Asignar'}</span></p>
+            {/* Fila Inferior: Cotizaciones y Citas Activas */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {/* Cotizaciones Pendientes */}
+              <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
+                <h3 className="font-bold text-teal-400 border-b border-teal-900 pb-2 uppercase flex justify-between items-center">
+                  <span>📦 Cotizaciones Inteligentes de Clientes</span>
+                  <span className="bg-teal-950 text-teal-400 px-2.5 py-0.5 rounded-full font-black text-[10px]">{quotes.length}</span>
+                </h3>
+                {quotes.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin solicitudes pendientes</p> : quotes.map(q => (
+                  <div key={q.id} className="p-3 bg-[#042120] border border-teal-900 rounded-xl flex flex-col space-y-2">
+                    <div>
+                      <p className="font-bold text-white text-sm">{q.user}</p>
+                      <p className="text-[#ecc245] font-black font-mono text-xs mt-0.5">${q.total.toLocaleString('es-CL')}</p>
+                      <p className="text-slate-400 font-mono text-[10px] mt-1">⚙️ Equipos: {q.cam}</p>
+                      <p className="text-[10px] text-teal-400 mt-0.5">📍 Ubicación: {q.address}</p>
+                      <p className="text-[10px] text-emerald-400 font-bold mt-1 bg-emerald-950/40 p-1 rounded border border-teal-900">
+                        📞 Teléfono Vinculado: <span className="underline font-mono text-white">{q.phone}</span>
+                      </p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => onApproveQuote(q)}
+                      className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider mt-1"
+                    >
+                      ✓ Aprobar y Despachar Instalador
+                    </button>
                   </div>
-                  <select value={app.technician || 'Sin Asignar'} onChange={(e) => onAssignTech(app.id, e.target.value)} className="w-full p-2 bg-[#0a3a37] border border-teal-800 rounded-lg text-white font-bold focus:outline-none text-[11px]">
-                    {staff.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              {/* Citas y Rutas Activas */}
+              <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
+                <h3 className="font-bold text-red-400 border-b border-teal-900 pb-2 uppercase">📅 Citas Técnicas en Tránsito</h3>
+                {activeAppointments.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin órdenes activas en tránsito.</p> : activeAppointments.map(app => (
+                  <div key={app.id} className="p-3 bg-[#042120] border border-teal-900 rounded-xl space-y-2">
+                    <div className="space-y-0.5">
+                      <p className="font-black text-white">{app.user} - <span className="text-[#ecc245]">"{app.service}"</span></p>
+                      <p className="text-[10px] text-teal-400">📍 Dirección: <span className="text-white font-bold">{app.address}</span></p>
+                      <p className="text-[10px] text-teal-400">📞 Contacto: <span className="text-teal-200 font-mono font-bold">{app.phone}</span></p>
+                      <p className="text-[10px] text-teal-500">¼ Operador Técnico: <span className="text-[#ecc245] font-bold underline">{app.technician || 'Sin Asignar'}</span></p>
+                    </div>
+                    <select value={app.technician || 'Sin Asignar'} onChange={(e) => onAssignTech(app.id, e.target.value)} className="w-full p-2 bg-[#0a3a37] border border-teal-800 rounded-lg text-white font-bold focus:outline-none text-[11px]">
+                      {staff.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -272,7 +322,7 @@ function AdminDashboard({ setView, catalog, setCatalog, quotes, setQuotes, appoi
                   <p className="font-black text-white">{u.name}</p>
                   <p className="text-[10px] text-teal-600">RUT: {u.rut} | Fono: {u.phone}</p>
                 </div>
-                <span className="text-teal-400 font-bold">Ver Ficha →</span>
+                <span className="text-teal-400 font-bold">Ver Historial →</span>
               </div>
             ))}
           </div>
@@ -284,9 +334,24 @@ function AdminDashboard({ setView, catalog, setCatalog, quotes, setQuotes, appoi
               <h2 className="text-sm font-black text-white">{selectedUserFolder.name}</h2>
               <button onClick={() => setSelectedUserFolder(null)} className="bg-[#042120] text-teal-400 px-3 py-1 rounded-lg">Atrás</button>
             </div>
-            <p><strong>📍 Dirección:</strong> {selectedUserFolder.address}</p>
+            <p><strong>📍 Dirección Registrada:</strong> {selectedUserFolder.address}</p>
             <p><strong>📞 Teléfono Principal:</strong> <span className="text-[#ecc245] font-mono">{selectedUserFolder.phone}</span></p>
-            <p><strong>🛠️ Hardware en Propiedad:</strong> {selectedUserFolder.installedHardware}</p>
+            <p><strong>🛠️ Equipamiento en Propiedad:</strong> {selectedUserFolder.installedHardware}</p>
+            
+            <div className="space-y-2 pt-2">
+              <h4 className="font-black text-teal-400 uppercase text-[10px]">📜 Historial / Bitácora de Campo Guardada:</h4>
+              {(!selectedUserFolder.historyLog || selectedUserFolder.historyLog.length === 0) ? (
+                <p className="text-teal-600 italic">No hay registros cerrados todavía.</p>
+              ) : selectedUserFolder.historyLog.map(log => (
+                <div key={log.id} className="p-2.5 bg-[#042120] border border-teal-950 rounded-xl">
+                  <div className="flex justify-between font-bold text-gray-300 text-[10px]">
+                    <span>🛠️ {log.type}</span>
+                    <span className="text-teal-500">👷 {log.technician}</span>
+                  </div>
+                  <p className="text-emerald-400 mt-1 italic font-medium">Observación: "{log.detail}"</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -295,13 +360,14 @@ function AdminDashboard({ setView, catalog, setCatalog, quotes, setQuotes, appoi
 }
 
 // ==========================================
-// 5. TERMINAL EXCLUSIVA DEL INSTALADOR (TECNICO)
+// 5. TERMINAL DEL TÉCNICO (CON CANAL DE ENVÍO AL ADMIN)
 // ==========================================
-function TechnicianApp({ setView, techJobs, onCompleteJob }) {
+function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
   const [techFilter, setTechFilter] = useState('Carlos Silva (Móvil 2)'); 
   const [observations, setObservations] = useState({}); 
 
-  const jobsFiltered = techJobs.filter(j => j.technician === techFilter);
+  // Filtramos los trabajos que están asignados al técnico seleccionado y que NO han sido enviados a revisión todavía
+  const jobsFiltered = techJobs.filter(j => j.technician === techFilter && j.status !== 'Revisión Técnico');
 
   return (
     <div className="min-h-screen bg-[#042120] flex flex-col max-w-md mx-auto p-4 text-white text-xs font-sans">
@@ -319,7 +385,7 @@ function TechnicianApp({ setView, techJobs, onCompleteJob }) {
       <div className="flex-1 space-y-3">
         {jobsFiltered.length === 0 ? (
           <div className="p-6 text-center bg-[#0a3a37]/40 rounded-xl border border-teal-900 text-teal-600 italic">
-            📭 Sin rutas ni órdenes de instalación pendientes.
+            📭 Sin rutas ni órdenes de instalación activas.
           </div>
         ) : (
           jobsFiltered.map(job => (
@@ -340,14 +406,26 @@ function TechnicianApp({ setView, techJobs, onCompleteJob }) {
                 </div>
               </div>
 
-              <textarea 
-                placeholder="Escribe las observaciones técnicas de la instalación aquí..." 
-                value={observations[job.id] || ''} 
-                onChange={(e) => setObservations({ ...observations, [job.id]: e.target.value })}
-                className="w-full bg-[#042120] border border-teal-900 text-teal-100 rounded-xl p-2.5 text-xs focus:outline-none focus:border-teal-500 h-16 resize-none"
-              />
-              <button type="button" onClick={() => { onCompleteJob(job.id, job.technician, observations[job.id] || 'Instalación finalizada correctamente.'); alert('Orden cerrada. Se actualizó la bitácora central.'); }} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2.5 rounded-xl uppercase tracking-wider text-xs transition-colors">
-                Finalizar y Cerrar Orden
+              {/* RECUADRO DONDE EL TÉCNICO ESCRIBE LA NOTA RETORNO */}
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-[#ecc245] uppercase tracking-wide">Reporte de Terreno / Observación:</label>
+                <textarea 
+                  placeholder="Ej: El cliente posee 2 cámaras más que no pertenecen a la empresa..." 
+                  value={observations[job.id] || ''} 
+                  onChange={(e) => setObservations({ ...observations, [job.id]: e.target.value })}
+                  className="w-full bg-[#042120] border border-teal-900 text-teal-100 rounded-xl p-2.5 text-xs focus:outline-none focus:border-teal-500 h-20 resize-none font-medium"
+                />
+              </div>
+              <button 
+                type="button" 
+                onClick={() => {
+                  const note = observations[job.id] || 'Instalación completada sin novedades.';
+                  onSubmitToAdmin(job.id, note);
+                  alert('Reporte enviado. Pasó a la mesa de control del Administrador para su validación.');
+                }} 
+                className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white font-black py-2.5 rounded-xl uppercase tracking-wider text-xs transition-colors"
+              >
+                🚀 Reportar y Enviar a Central Admin
               </button>
             </div>
           ))
@@ -362,7 +440,7 @@ function TechnicianApp({ setView, techJobs, onCompleteJob }) {
 }
 
 // ==========================================
-// 6. APLICACIÓN MÓVIL DEL CLIENTE (LAYOUT)
+// 6. COMPONENTES DEL CLIENTE MOBILE LAYOUT
 // ==========================================
 const ClientLayout = ({ children, setView, onLogout }) => (
   <div className="min-h-screen bg-[#042120] flex flex-col max-w-md mx-auto shadow-2xl relative border-x border-teal-900 text-white font-sans">
@@ -385,21 +463,23 @@ const ClientHome = ({ currentUser, appointments }) => {
   return (
     <div className="p-5 space-y-4">
       <div className="bg-gradient-to-br from-[#0a3a37] to-[#07302e] p-4 rounded-2xl border border-teal-800/30 shadow-lg">
-        <p className="text-[9px] uppercase font-bold text-teal-400 tracking-wider">Abonado Registrado</p>
+        <p className="text-[9px] uppercase font-bold text-teal-400 tracking-wider">Abonado Activo</p>
         <p className="text-base font-black text-white mt-0.5">{currentUser?.name}</p>
-        <p className="text-xs text-[#ecc245] mt-1 font-mono font-bold">📞 Teléfono Técnico: {currentUser?.phone}</p>
-        <p className="text-xs text-teal-400 mt-2">📍 Propiedad: {currentUser?.address}</p>
+        <p className="text-xs text-[#ecc245] mt-1 font-mono font-bold">📞 Contacto: {currentUser?.phone}</p>
+        <p className="text-xs text-teal-400 mt-2">📍 Propiedad Protegida: {currentUser?.address}</p>
       </div>
       
       <div className="space-y-2">
-        <p className="font-bold text-teal-600 uppercase text-[9px] tracking-wider">📋 Estado de mis Visitas:</p>
-        {myEvents.length === 0 ? <p className="text-teal-700 italic text-center py-2 text-[11px]">Sin visitas programadas por ahora.</p> : myEvents.map(ev => (
+        <p className="font-bold text-teal-600 uppercase text-[9px] tracking-wider">📋 Estado de mis Servicios:</p>
+        {myEvents.length === 0 ? <p className="text-teal-700 italic text-center py-2 text-[11px]">Sin visitas operativas agendadas por ahora.</p> : myEvents.map(ev => (
           <div key={ev.id} className="bg-[#0a3a37] p-3 rounded-xl border border-teal-800 flex justify-between items-center text-[11px]">
             <div>
               <p className="font-bold text-white">{ev.service}</p>
-              <p className="text-[10px] text-teal-400">Camión Técnico: <span className="text-[#ecc245] font-bold">{ev.technician || 'Asignando ruta...'}</span></p>
+              <p className="text-[10px] text-teal-400">Estado: <span className="text-[#ecc245] font-bold">{ev.status === 'Revisión Técnico' ? 'Instalación Finalizada (Validando Central)' : (ev.technician || 'Asignando ruta...')}</span></p>
             </div>
-            <span className="text-[8px] bg-teal-950 text-teal-400 border border-teal-800 px-2 py-0.5 rounded font-black uppercase">Vigente</span>
+            <span className="text-[8px] bg-teal-950 text-teal-400 border border-teal-800 px-2 py-0.5 rounded font-black uppercase">
+              {ev.status === 'Revisión Técnico' ? 'Por Cerrar' : 'Vigente'}
+            </span>
           </div>
         ))}
       </div>
@@ -459,7 +539,6 @@ const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
         <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 text-center space-y-4">
           <div>
             <p className="text-2xl font-black text-[#ecc245] font-mono">${total.toLocaleString('es-CL')}</p>
-            {/* RESGUARDO LEGAL PRECIOS */}
             <p className="text-[9px] text-red-400 font-bold mt-2 bg-red-950/30 p-2 rounded border border-red-900/30 leading-snug">
               ⚠️ El valor arrojado es estimado y preliminar. El precio final puede variar posterior a la evaluación técnica presencial en terreno del instalador.
             </p>
@@ -513,7 +592,7 @@ const HelpPage = ({ currentUser, onSendAppointment }) => {
 };
 
 // ==========================================
-// 7. ORQUESTADOR OPERATIVO GLOBAL NÚCLEO DE DATOS
+// 7. ORQUESTADOR CENTRAL GLOBAL (NÚCLEO DE DATOS)
 // ==========================================
 export default function App() {
   const [view, setView] = useState('landing');
@@ -533,16 +612,14 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [quotes, setQuotes] = useState(() => JSON.parse(localStorage.getItem('cisven_quotes')) || []);
   const [appointments, setAppointments] = useState(() => JSON.parse(localStorage.getItem('cisven_appointments')) || []);
-  const [techJobs, setTechJobs] = useState(() => JSON.parse(localStorage.getItem('cisven_techjobs')) || []);
 
   useEffect(() => { localStorage.setItem('cisven_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('cisven_quotes', JSON.stringify(quotes)); }, [quotes]);
   useEffect(() => { localStorage.setItem('cisven_appointments', JSON.stringify(appointments)); }, [appointments]);
-  useEffect(() => { localStorage.setItem('cisven_techjobs', JSON.stringify(techJobs)); }, [techJobs]);
 
   const handleSendQuote = (user, type, cam, qty1, qty2, qty3, total, address, mtrs, clientPhone) => {
     const phoneToInject = clientPhone || users.find(u => u.name === user)?.phone || '+56976543210';
-    setQuotes([{ id: Date.now(), user, type, cam, total, address, meters: mtrs, q1: qty1, q2: qty2, q3: qty3, phone: phoneToInject }, ...quotes]);
+    setQuotes([{ id: Date.now(), user, type, cam, total, address, meters: mtrs, q1: qty1, q2: qty2, q3: qty3, phone: phoneToInject, status: 'Pendiente' }, ...quotes]);
   };
   
   const handleSendAppointment = (userName, service, date) => {
@@ -554,44 +631,82 @@ export default function App() {
       date, 
       address: targetUser?.address || 'Dirección Base', 
       phone: targetUser?.phone || '+56976543210',
-      technician: 'Sin Asignar' 
+      technician: 'Sin Asignar',
+      status: 'Asignado',
+      techObservation: ''
     };
     setAppointments([newJob, ...appointments]); 
-    setTechJobs([newJob, ...techJobs]);
   };
 
   const handleApproveQuote = (quoteObject) => {
     const approvedJob = {
       id: Date.now(),
       user: quoteObject.user,
-      service: `Instalación Comercial: (${quoteObject.cam})`,
+      service: `Instalación: (${quoteObject.cam})`,
       date: 'Por Coordinar',
       address: quoteObject.address,
       phone: quoteObject.phone || '+56976543210', 
-      technician: 'Sin Asignar'
+      technician: 'Sin Asignar',
+      status: 'Asignado',
+      techObservation: ''
     };
     setAppointments([approvedJob, ...appointments]);
-    setTechJobs([approvedJob, ...techJobs]);
     setQuotes(quotes.filter(q => q.id !== quoteObject.id));
   };
 
   const handleAssignTech = (id, technicianName) => {
     setAppointments(prev => prev.map(item => item.id === id ? { ...item, technician: technicianName } : item));
-    setTechJobs(prev => prev.map(item => item.id === id ? { ...item, technician: technicianName } : item));
+  };
+
+  // CANAL DE RETORNO: El técnico reporta la nota pero NO borra la orden del sistema central
+  const handleTechSubmitToAdmin = (id, techObservationText) => {
+    setAppointments(prev => prev.map(item => 
+      item.id === id ? { ...item, status: 'Revisión Técnico', techObservation: techObservationText } : item
+    ));
   };
   
-  const handleCompleteJob = (id, firmingTechnician, techObservation) => {
-    const target = techJobs.find(j => j.id === id); if (!target) return;
-    setTechJobs(techJobs.filter(j => j.id !== id)); 
+  // EL ADMIN CIERRA TOTALMENTE: Lee la nota de retorno, toma acción y archiva en la bitácora
+  const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName) => {
     setAppointments(appointments.filter(j => j.id !== id));
-    setUsers(prev => prev.map(u => u.name === target.user ? { ...u, historyLog: [{ id: Date.now(), date: 'Hoy', type: target.service, technician: firmingTechnician, detail: techObservation }, ...(u.historyLog || [])] } : u));
+    setUsers(prev => prev.map(u => 
+      u.name === userName 
+        ? { 
+            ...u, 
+            historyLog: [
+              { id: Date.now(), date: 'Hoy', type: serviceName, technician: technicianName, detail: finalObservation }, 
+              ...(u.historyLog || [])
+            ] 
+          } 
+        : u
+    ));
   };
 
   return (
     <div>
       {view === 'landing' && <Landing setView={setView} />}
-      {view === 'admin-ops' && <AdminDashboard setView={setView} catalog={cameraCatalog} setCatalog={setCameraCatalog} quotes={quotes} setQuotes={setQuotes} appointments={appointments} setAppointments={setAppointments} users={users} onAssignTech={handleAssignTech} onApproveQuote={handleApproveQuote} />}
-      {view === 'tecnico-app' && <TechnicianApp setView={setView} techJobs={techJobs} onCompleteJob={handleCompleteJob} />}
+      
+      {view === 'admin-ops' && (
+        <AdminDashboard 
+          setView={setView} 
+          catalog={cameraCatalog} 
+          setCatalog={setCameraCatalog} 
+          quotes={quotes} 
+          appointments={appointments} 
+          users={users} 
+          onAssignTech={handleAssignTech} 
+          onApproveQuote={handleApproveQuote}
+          onArchiveJob={handleAdminArchiveJob}
+        />
+      )}
+      
+      {view === 'tecnico-app' && (
+        <TechnicianApp 
+          setView={setView} 
+          techJobs={appointments} 
+          onSubmitToAdmin={handleTechSubmitToAdmin} 
+        />
+      )}
+      
       {view.startsWith('app-') && (
         currentUser === null ? (
           <ClientAuth users={users} onRegister={(u) => setUsers([...users, u])} onLoginSuccess={(u) => { setCurrentUser(u); setView('app-dashboard'); }} />
