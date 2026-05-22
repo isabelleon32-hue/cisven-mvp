@@ -169,17 +169,31 @@ function ClientAuth({ users, onRegister, onLoginSuccess }) {
 }
 
 // ==========================================
-// 4. CONSOLA DE ADMINISTRACIÓN CENTRAL (CON RETORNO TÉCNICO)
+// 4. CONSOLA DE ADMINISTRACIÓN CENTRAL
 // ==========================================
-function AdminDashboard({ setView, catalog, setCatalog, quotes, appointments, users, onAssignTech, onApproveQuote, onArchiveJob }) {
+function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quotes, appointments, users, onAssignTech, onApproveQuote, onArchiveJob }) {
   const [tab, setTab] = useState('ops');
   const [selectedUserFolder, setSelectedUserFolder] = useState(null);
   
+  // Estados para el formulario de inyección de productos (Restaurado)
+  const [newItemLabel, setNewItemLabel] = useState('');
+  const [newItemPrice, setNewItemPrice] = useState('');
+  const [newItemStock, setNewItemStock] = useState('');
+  
   const staff = ['Sin Asignar', 'Juan Pérez (Móvil 1)', 'Carlos Silva (Móvil 2)', 'Andrés León (Móvil 3)'];
 
-  // Separamos las citas activas de las que están esperando revisión del admin
   const activeAppointments = appointments.filter(app => app.status !== 'Revisión Técnico');
   const reviewAppointments = appointments.filter(app => app.status === 'Revisión Técnico');
+
+  const handleCreateProduct = (e) => {
+    e.preventDefault();
+    if (!newItemLabel || !newItemPrice || !newItemStock) return alert('Por favor rellene todos los datos para el nuevo producto.');
+    onAddProduct(newItemLabel, parseInt(newItemPrice), parseInt(newItemStock));
+    setNewItemLabel('');
+    setNewItemPrice('');
+    setNewItemStock('');
+    alert('📦 Producto inyectado con éxito en el Maestro de Inventario.');
+  };
 
   return (
     <div className="min-h-screen bg-[#042120] flex font-sans text-xs text-teal-100">
@@ -202,14 +216,14 @@ function AdminDashboard({ setView, catalog, setCatalog, quotes, appointments, us
       <div className="flex-1 p-6 overflow-y-auto space-y-4">
         <h1 className="text-base font-black text-white uppercase tracking-wider">
           {tab === 'ops' && 'Mesa de Control de Incidentes y Despachos'}
-          {tab === 'price' && 'Maestro de Inventario'}
+          {tab === 'price' && 'Maestro de Inventario y Carga de Existencias'}
           {tab === 'users' && !selectedUserFolder && 'Fichero General de Abonados'}
           {selectedUserFolder && `Expediente: ${selectedUserFolder.name}`}
         </h1>
 
         {tab === 'ops' && (
           <div className="space-y-6">
-            {/* NUEVA SECCIÓN: CANAL DE RETORNO Y RETROALIMENTACIÓN DEL TÉCNICO */}
+            {/* SECCIÓN DE OBSERVACIONES TÉCNICAS (REVISIÓN Y RETORNO) */}
             {reviewAppointments.length > 0 && (
               <div className="bg-[#0f4d39] p-4 rounded-2xl border-2 border-emerald-500 shadow-2xl space-y-3">
                 <h3 className="font-black text-emerald-300 uppercase flex justify-between items-center text-xs tracking-wider animate-pulse">
@@ -224,7 +238,6 @@ function AdminDashboard({ setView, catalog, setCatalog, quotes, appointments, us
                         <p className="text-teal-400">📍 Dirección: <span className="text-white font-medium">{app.address}</span></p>
                         <p className="text-teal-400">👷 Cerrado por: <span className="text-[#ecc245] font-bold">{app.technician}</span></p>
                         
-                        {/* RECUADRO CON LA INFORMACIÓN QUE RETORNA DESDE EL CELULAR DEL TÉCNICO */}
                         <div className="mt-2 p-2.5 bg-emerald-950/80 border border-emerald-500/40 rounded-lg">
                           <p className="text-[9px] font-black text-[#ecc245] uppercase tracking-wide">📝 Reporte del Instalador en Terreno:</p>
                           <p className="text-emerald-200 font-bold italic text-xs mt-0.5">"{app.techObservation}"</p>
@@ -235,7 +248,7 @@ function AdminDashboard({ setView, catalog, setCatalog, quotes, appointments, us
                           type="button" 
                           onClick={() => {
                             onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service);
-                            alert('Órden validada. La observación se archivó en la bitácora perpetua del cliente.');
+                            alert('Órden validada. La mesa quedó limpia y la observación se guardó en la bitácora perpetua del cliente.');
                           }}
                           className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider"
                         >
@@ -300,16 +313,80 @@ function AdminDashboard({ setView, catalog, setCatalog, quotes, appointments, us
         )}
 
         {tab === 'price' && (
-          <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-3">
-            <h3 className="font-bold text-white uppercase">📦 Control de Stock y Precios</h3>
-            <div className="space-y-2">
-              {catalog.map((item) => (
-                <div key={item.id} className="p-2.5 bg-[#042120] rounded-xl border border-teal-900/60 grid grid-cols-4 gap-2 items-center font-bold">
-                  <span className="col-span-2 text-teal-200">{item.label}</span>
-                  <input type="number" value={item.price} onChange={(e) => setCatalog(catalog.map(i => i.id === item.id ? { ...i, price: parseInt(e.target.value) || 0 } : i))} className="p-1 bg-[#0a3a37] border border-teal-800 rounded text-right text-[#ecc245]" />
-                  <input type="number" value={item.stock} onChange={(e) => setCatalog(catalog.map(i => i.id === item.id ? { ...i, stock: parseInt(e.target.value) || 0 } : i))} className="p-1 bg-[#0a3a37] border border-teal-800 rounded text-center text-white" />
+          <div className="space-y-4">
+            {/* FORMULARIO SUPERIOR RESTAURADO PARA CARGAR NUEVA MERCADERÍA */}
+            <form onSubmit={handleCreateProduct} className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-3">
+              <h3 className="font-bold text-[#ecc245] uppercase text-[11px] tracking-wider">📥 Inyectar Nuevo Producto al Catálogo</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] uppercase font-bold text-gray-300">Nombre del Equipo</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: Cámara Bullet 5MP AI" 
+                    value={newItemLabel} 
+                    onChange={e => setNewItemLabel(e.target.value)}
+                    className="p-2 bg-[#042120] border border-teal-900 rounded-xl text-white font-bold text-xs"
+                  />
                 </div>
-              ))}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] uppercase font-bold text-gray-300">Precio CLP ($)</label>
+                  <input 
+                    type="number" 
+                    placeholder="Ej: 55000" 
+                    value={newItemPrice} 
+                    onChange={e => setNewItemPrice(e.target.value)}
+                    className="p-2 bg-[#042120] border border-teal-900 rounded-xl text-[#ecc245] font-mono font-bold text-xs"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] uppercase font-bold text-gray-300">Stock Físico Inicial</label>
+                  <input 
+                    type="number" 
+                    placeholder="Ej: 25" 
+                    value={newItemStock} 
+                    onChange={e => setNewItemStock(e.target.value)}
+                    className="p-2 bg-[#042120] border border-teal-900 rounded-xl text-white text-center font-bold text-xs"
+                  />
+                </div>
+              </div>
+              <button type="submit" className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white text-[10px] font-black py-2 rounded-xl uppercase tracking-wider">
+                + Cargar Producto al Maestro e Inyectar a Clientes
+              </button>
+            </form>
+
+            {/* TABLA DE PRODUCTOS CON BOTÓN DE ELIMINACIÓN INDIVIDUAL */}
+            <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-3">
+              <h3 className="font-bold text-white uppercase text-[11px]">📦 Inventario Físico Actual y Modificación de Valores</h3>
+              <div className="space-y-2">
+                {catalog.map((item) => (
+                  <div key={item.id} className="p-2.5 bg-[#042120] rounded-xl border border-teal-900/60 grid grid-cols-12 gap-2 items-center font-bold">
+                    <span className="col-span-5 text-teal-200">{item.label}</span>
+                    <div className="col-span-3 flex items-center gap-1">
+                      <span className="text-teal-600 font-mono">$</span>
+                      <input type="number" value={item.price} onChange={(e) => {}} disabled className="w-full p-1 bg-[#0a3a37]/50 border border-teal-900 rounded text-right text-[#ecc245] opacity-80" />
+                    </div>
+                    <div className="col-span-3 flex items-center gap-1">
+                      <span className="text-teal-600 text-[9px]">Cant.</span>
+                      <input type="number" value={item.stock} onChange={(e) => {}} disabled className="w-full p-1 bg-[#0a3a37]/50 border border-teal-900 rounded text-center text-white opacity-80" />
+                    </div>
+                    {/* BOTÓN DE ELIMINACIÓN DE CELDA REQUERIDO */}
+                    <div className="col-span-1 text-center">
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          if(confirm(`¿Está seguro de eliminar ${item.label}? Esto provocará un quiebre definitivo de stock y se quitará del catálogo de los clientes.`)) {
+                            onDeleteProduct(item.id);
+                          }
+                        }}
+                        className="text-red-400 hover:text-red-500 text-sm font-sans"
+                        title="Eliminar producto"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -360,13 +437,12 @@ function AdminDashboard({ setView, catalog, setCatalog, quotes, appointments, us
 }
 
 // ==========================================
-// 5. TERMINAL DEL TÉCNICO (CON CANAL DE ENVÍO AL ADMIN)
+// 5. TERMINAL DEL TÉCNICO
 // ==========================================
 function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
   const [techFilter, setTechFilter] = useState('Carlos Silva (Móvil 2)'); 
   const [observations, setObservations] = useState({}); 
 
-  // Filtramos los trabajos que están asignados al técnico seleccionado y que NO han sido enviados a revisión todavía
   const jobsFiltered = techJobs.filter(j => j.technician === techFilter && j.status !== 'Revisión Técnico');
 
   return (
@@ -406,7 +482,6 @@ function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
                 </div>
               </div>
 
-              {/* RECUADRO DONDE EL TÉCNICO ESCRIBE LA NOTA RETORNO */}
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-[#ecc245] uppercase tracking-wide">Reporte de Terreno / Observación:</label>
                 <textarea 
@@ -440,7 +515,7 @@ function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
 }
 
 // ==========================================
-// 6. COMPONENTES DEL CLIENTE MOBILE LAYOUT
+// 6. COMPONENTES DEL CLIENTE LAYOUT MOBILE
 // ==========================================
 const ClientLayout = ({ children, setView, onLogout }) => (
   <div className="min-h-screen bg-[#042120] flex flex-col max-w-md mx-auto shadow-2xl relative border-x border-teal-900 text-white font-sans">
@@ -488,11 +563,38 @@ const ClientHome = ({ currentUser, appointments }) => {
 };
 
 const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
-  const [step, setStep] = useState(1); const [type, setType] = useState(''); const [addr, setAddr] = useState(currentUser?.address || '');
-  const [meters, setMeters] = useState(15); const [c1, setC1] = useState(0); const [c2, setC2] = useState(0); const [c3, setC3] = useState(0);
+  const [step, setStep] = useState(1); 
+  const [type, setType] = useState(''); 
+  const [addr, setAddr] = useState(currentUser?.address || '');
+  const [meters, setMeters] = useState(15); 
+  
+  // Estado para capturar la cantidad seleccionada de cada producto dinámicamente
+  const [quantities, setQuantities] = useState({});
+
+  const handleUpdateQty = (id, delta) => {
+    setQuantities(prev => {
+      const current = prev[id] || 0;
+      return { ...prev, [id]: Math.max(0, current + delta) };
+    });
+  };
 
   const base = type === 'Empresa' ? 120000 : 65000;
-  const total = base + (c1 * catalog[0].price) + (c2 * catalog[1].price) + (c3 * catalog[2].price) + (meters * 3500);
+  
+  // Cálculo automatizado basado en el catálogo inyectado por el admin
+  const totalHardware = catalog.reduce((acc, item) => {
+    const qty = quantities[item.id] || 0;
+    return acc + (qty * item.price);
+  }, 0);
+  
+  const total = base + totalHardware + (meters * 3500);
+
+  // Formatear el string de equipos dinámicamente para la orden
+  const getHardwareSummaryString = () => {
+    return catalog
+      .filter(item => quantities[item.id] > 0)
+      .map(item => `${quantities[item.id]}x ${item.label}`)
+      .join(' / ') || 'Instalación Base';
+  };
 
   return (
     <div className="p-5 space-y-4 text-xs font-sans">
@@ -510,16 +612,19 @@ const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
       )}
       {step === 2 && (
         <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-4">
-          <div className="space-y-2">
-            {catalog.map((item, idx) => {
-              const currentVal = idx === 0 ? c1 : idx === 1 ? c2 : c3; const setVal = idx === 0 ? setC1 : idx === 1 ? setC2 : setC3;
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            {catalog.map((item) => {
+              const currentVal = quantities[item.id] || 0;
               return (
                 <div key={item.id} className="flex justify-between items-center p-2.5 bg-[#042120] border border-teal-950 rounded-xl">
-                  <div><p className="font-bold text-teal-100">{item.label}</p><p className="text-[10px] text-teal-500">${item.price.toLocaleString('es-CL')}</p></div>
+                  <div>
+                    <p className="font-bold text-teal-100">{item.label}</p>
+                    <p className="text-[10px] text-teal-500">${item.price.toLocaleString('es-CL')}</p>
+                  </div>
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => setVal(Math.max(0, currentVal - 1))} className="w-7 h-7 bg-[#0a3a37] text-white rounded font-black">-</button>
+                    <button type="button" onClick={() => handleUpdateQty(item.id, -1)} className="w-7 h-7 bg-[#0a3a37] text-white rounded font-black">-</button>
                     <span className="w-4 text-center font-bold text-[#ecc245] font-mono">{currentVal}</span>
-                    <button type="button" onClick={() => setVal(currentVal + 1)} className="w-7 h-7 bg-[#0a3a37] text-white rounded font-black">+</button>
+                    <button type="button" onClick={() => handleUpdateQty(item.id, 1)} className="w-7 h-7 bg-[#0a3a37] text-white rounded font-black">+</button>
                   </div>
                 </div>
               );
@@ -547,7 +652,16 @@ const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
             <p><strong>📍 Ubicación de Obra:</strong> {addr}</p>
             <p><strong>📞 Teléfono Contacto:</strong> {currentUser?.phone || '+56976543210'}</p>
           </div>
-          <button type="button" onClick={() => { onSendQuote(currentUser.name, type, `${c1}x720p / ${c2}x1080p / ${c3}x4K`, c1, c2, c3, total, addr, meters, currentUser?.phone); setStep(4); }} className="w-full bg-[#085a4f] text-white py-3 rounded-xl font-black uppercase tracking-wider">Enviar Propuesta a Central</button>
+          <button 
+            type="button" 
+            onClick={() => { 
+              onSendQuote(currentUser.name, type, getHardwareSummaryString(), total, addr, meters, currentUser?.phone); 
+              setStep(4); 
+            }} 
+            className="w-full bg-[#085a4f] text-white py-3 rounded-xl font-black uppercase tracking-wider"
+          >
+            Enviar Propuesta a Central
+          </button>
         </div>
       )}
       {step === 4 && <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Presupuesto enviado con éxito. La central validará las existencias.</p>}
@@ -596,11 +710,16 @@ const HelpPage = ({ currentUser, onSendAppointment }) => {
 // ==========================================
 export default function App() {
   const [view, setView] = useState('landing');
-  const [cameraCatalog, setCameraCatalog] = useState([
-    { id: 1, label: '720p Básica Estándar', price: 25000, stock: 45 }, 
-    { id: 2, label: '1080p Domo Alta Def.', price: 45000, stock: 30 }, 
-    { id: 3, label: '4K Profesional + AI', price: 95000, stock: 12 }
-  ]);
+  
+  // Catálogo maestro sincronizado por localStorage
+  const [cameraCatalog, setCameraCatalog] = useState(() => {
+    const localCat = localStorage.getItem('cisven_catalog');
+    return localCat ? JSON.parse(localCat) : [
+      { id: 1, label: '720p Básica Estándar', price: 25000, stock: 45 }, 
+      { id: 2, label: '1080p Domo Alta Def.', price: 45000, stock: 30 }, 
+      { id: 3, label: '4K Profesional + AI', price: 95000, stock: 12 }
+    ];
+  });
   
   const [users, setUsers] = useState(() => {
     const local = localStorage.getItem('cisven_users');
@@ -613,13 +732,24 @@ export default function App() {
   const [quotes, setQuotes] = useState(() => JSON.parse(localStorage.getItem('cisven_quotes')) || []);
   const [appointments, setAppointments] = useState(() => JSON.parse(localStorage.getItem('cisven_appointments')) || []);
 
+  useEffect(() => { localStorage.setItem('cisven_catalog', JSON.stringify(cameraCatalog)); }, [cameraCatalog]);
   useEffect(() => { localStorage.setItem('cisven_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('cisven_quotes', JSON.stringify(quotes)); }, [quotes]);
   useEffect(() => { localStorage.setItem('cisven_appointments', JSON.stringify(appointments)); }, [appointments]);
 
-  const handleSendQuote = (user, type, cam, qty1, qty2, qty3, total, address, mtrs, clientPhone) => {
+  // Funciones para manipular productos del catálogo (Inyectar y Quitar celdas)
+  const handleAddProduct = (label, price, stock) => {
+    const newProd = { id: Date.now(), label, price, stock };
+    setCameraCatalog([...cameraCatalog, newProd]);
+  };
+
+  const handleDeleteProduct = (id) => {
+    setCameraCatalog(cameraCatalog.filter(item => item.id !== id));
+  };
+
+  const handleSendQuote = (user, type, cam, total, address, mtrs, clientPhone) => {
     const phoneToInject = clientPhone || users.find(u => u.name === user)?.phone || '+56976543210';
-    setQuotes([{ id: Date.now(), user, type, cam, total, address, meters: mtrs, q1: qty1, q2: qty2, q3: qty3, phone: phoneToInject, status: 'Pendiente' }, ...quotes]);
+    setQuotes([{ id: Date.now(), user, type, cam, total, address, meters: mtrs, phone: phoneToInject, status: 'Pendiente' }, ...quotes]);
   };
   
   const handleSendAppointment = (userName, service, date) => {
@@ -658,14 +788,13 @@ export default function App() {
     setAppointments(prev => prev.map(item => item.id === id ? { ...item, technician: technicianName } : item));
   };
 
-  // CANAL DE RETORNO: El técnico reporta la nota pero NO borra la orden del sistema central
   const handleTechSubmitToAdmin = (id, techObservationText) => {
     setAppointments(prev => prev.map(item => 
       item.id === id ? { ...item, status: 'Revisión Técnico', techObservation: techObservationText } : item
     ));
   };
   
-  // EL ADMIN CIERRA TOTALMENTE: Lee la nota de retorno, toma acción y archiva en la bitácora
+  // EL ADMIN VALIDA Y CIERRA EL TRABAJO: Elimina las ventanas operativas y archiva de inmediato en el fichero histórico
   const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName) => {
     setAppointments(appointments.filter(j => j.id !== id));
     setUsers(prev => prev.map(u => 
@@ -673,7 +802,7 @@ export default function App() {
         ? { 
             ...u, 
             historyLog: [
-              { id: Date.now(), date: 'Hoy', type: serviceName, technician: technicianName, detail: finalObservation }, 
+              { id: Date.now(), date: new Date().toLocaleDateString('es-CL'), type: serviceName, technician: technicianName, detail: finalObservation }, 
               ...(u.historyLog || [])
             ] 
           } 
@@ -689,7 +818,8 @@ export default function App() {
         <AdminDashboard 
           setView={setView} 
           catalog={cameraCatalog} 
-          setCatalog={setCameraCatalog} 
+          onAddProduct={handleAddProduct}
+          onDeleteProduct={handleDeleteProduct}
           quotes={quotes} 
           appointments={appointments} 
           users={users} 
