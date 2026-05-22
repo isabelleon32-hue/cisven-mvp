@@ -171,18 +171,19 @@ function ClientAuth({ users, onRegister, onLoginSuccess }) {
 // ==========================================
 // 4. CONSOLA DE ADMINISTRACIÓN CENTRAL
 // ==========================================
-function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quotes, appointments, users, onAssignTech, onApproveQuote, onArchiveJob }) {
+function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quotes, appointments, users, onAssignTech, onConfirmDispatch, onApproveQuote, onArchiveJob }) {
   const [tab, setTab] = useState('ops');
   const [selectedUserFolder, setSelectedUserFolder] = useState(null);
   
-  // Estados para el formulario de inyección de productos (Restaurado)
   const [newItemLabel, setNewItemLabel] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemStock, setNewItemStock] = useState('');
   
   const staff = ['Sin Asignar', 'Juan Pérez (Móvil 1)', 'Carlos Silva (Móvil 2)', 'Andrés León (Móvil 3)'];
 
-  const activeAppointments = appointments.filter(app => app.status !== 'Revisión Técnico');
+  // Las citas que están pendientes de asignarse o enviarse
+  const activeAppointments = appointments.filter(app => app.status === 'Asignado' || app.status === 'Pendiente Despacho');
+  // Las citas que el técnico ya completó y están esperando la revisión final del admin
   const reviewAppointments = appointments.filter(app => app.status === 'Revisión Técnico');
 
   const handleCreateProduct = (e) => {
@@ -223,7 +224,7 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
 
         {tab === 'ops' && (
           <div className="space-y-6">
-            {/* SECCIÓN DE OBSERVACIONES TÉCNICAS (REVISIÓN Y RETORNO) */}
+            {/* SECCIÓN DE OBSERVACIONES TÉCNICAS (RETORNO DE TERRENO) */}
             {reviewAppointments.length > 0 && (
               <div className="bg-[#0f4d39] p-4 rounded-2xl border-2 border-emerald-500 shadow-2xl space-y-3">
                 <h3 className="font-black text-emerald-300 uppercase flex justify-between items-center text-xs tracking-wider animate-pulse">
@@ -248,9 +249,9 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
                           type="button" 
                           onClick={() => {
                             onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service);
-                            alert('Órden validada. La mesa quedó limpia y la observación se guardó en la bitácora perpetua del cliente.');
+                            alert('Órden validada. La mesa quedó limpia y la observación se guardó en la bitácora del cliente.');
                           }}
-                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider"
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider"
                         >
                           ✓ Validar, Archivar Historial y Limpiar Mesa
                         </button>
@@ -291,7 +292,7 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
                 ))}
               </div>
 
-              {/* Citas y Rutas Activas */}
+              {/* Citas y Rutas Activas en Tránsito */}
               <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
                 <h3 className="font-bold text-red-400 border-b border-teal-900 pb-2 uppercase">📅 Citas Técnicas en Tránsito</h3>
                 {activeAppointments.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin órdenes activas en tránsito.</p> : activeAppointments.map(app => (
@@ -300,11 +301,32 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
                       <p className="font-black text-white">{app.user} - <span className="text-[#ecc245]">"{app.service}"</span></p>
                       <p className="text-[10px] text-teal-400">📍 Dirección: <span className="text-white font-bold">{app.address}</span></p>
                       <p className="text-[10px] text-teal-400">📞 Contacto: <span className="text-teal-200 font-mono font-bold">{app.phone}</span></p>
-                      <p className="text-[10px] text-teal-500">¼ Operador Técnico: <span className="text-[#ecc245] font-bold underline">{app.technician || 'Sin Asignar'}</span></p>
+                      <p className="text-[10px] text-teal-500">👷 Operador Asignado: <span className="text-teal-300 font-bold underline">{app.technician || 'Sin Asignar'}</span></p>
                     </div>
-                    <select value={app.technician || 'Sin Asignar'} onChange={(e) => onAssignTech(app.id, e.target.value)} className="w-full p-2 bg-[#0a3a37] border border-teal-800 rounded-lg text-white font-bold focus:outline-none text-[11px]">
-                      {staff.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+                    
+                    <div className="space-y-1.5 pt-1">
+                      <select 
+                        value={app.technician || 'Sin Asignar'} 
+                        onChange={(e) => onAssignTech(app.id, e.target.value)} 
+                        className="w-full p-2 bg-[#0a3a37] border border-teal-800 rounded-lg text-white font-bold focus:outline-none text-[11px]"
+                      >
+                        {staff.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+
+                      {/* EL BOTÓN RESTAURADOR DE CONEXIÓN: Libera y despacha la ruta al técnico de verdad */}
+                      {app.technician && app.technician !== 'Sin Asignar' && (
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            onConfirmDispatch(app.id);
+                            alert(`🚀 ¡Ruta confirmada! Orden enviada exitosamente a la terminal de campo de ${app.technician}.`);
+                          }}
+                          className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white text-[10px] font-black py-1.5 rounded-lg uppercase tracking-wider transition-all"
+                        >
+                          🚀 Confirmar y Despachar Ruta
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -369,7 +391,6 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
                       <span className="text-teal-600 text-[9px]">Cant.</span>
                       <input type="number" value={item.stock} onChange={(e) => {}} disabled className="w-full p-1 bg-[#0a3a37]/50 border border-teal-900 rounded text-center text-white opacity-80" />
                     </div>
-                    {/* BOTÓN DE ELIMINACIÓN DE CELDA REQUERIDO */}
                     <div className="col-span-1 text-center">
                       <button 
                         type="button" 
@@ -437,13 +458,14 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
 }
 
 // ==========================================
-// 5. TERMINAL DEL TÉCNICO
+// 5. TERMINAL DEL TÉCNICO (MUESTRA RUTAS EN RUTA)
 // ==========================================
 function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
   const [techFilter, setTechFilter] = useState('Carlos Silva (Móvil 2)'); 
   const [observations, setObservations] = useState({}); 
 
-  const jobsFiltered = techJobs.filter(j => j.technician === techFilter && j.status !== 'Revisión Técnico');
+  // CORRECCIÓN CLAVE: El instalador ahora solo ve las órdenes que han sido despachadas por el admin con estado 'En Ruta'
+  const jobsFiltered = techJobs.filter(j => j.technician === techFilter && j.status === 'En Ruta');
 
   return (
     <div className="min-h-screen bg-[#042120] flex flex-col max-w-md mx-auto p-4 text-white text-xs font-sans">
@@ -461,7 +483,7 @@ function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
       <div className="flex-1 space-y-3">
         {jobsFiltered.length === 0 ? (
           <div className="p-6 text-center bg-[#0a3a37]/40 rounded-xl border border-teal-900 text-teal-600 italic">
-            📭 Sin rutas ni órdenes de instalación activas.
+            📭 Sin rutas ni órdenes de instalación activas para este móvil.
           </div>
         ) : (
           jobsFiltered.map(job => (
@@ -550,7 +572,7 @@ const ClientHome = ({ currentUser, appointments }) => {
           <div key={ev.id} className="bg-[#0a3a37] p-3 rounded-xl border border-teal-800 flex justify-between items-center text-[11px]">
             <div>
               <p className="font-bold text-white">{ev.service}</p>
-              <p className="text-[10px] text-teal-400">Estado: <span className="text-[#ecc245] font-bold">{ev.status === 'Revisión Técnico' ? 'Instalación Finalizada (Validando Central)' : (ev.technician || 'Asignando ruta...')}</span></p>
+              <p className="text-[10px] text-teal-400">Estado: <span className="text-[#ecc245] font-bold">{ev.status === 'Revisión Técnico' ? 'Instalación Finalizada (Validando Central)' : ev.status === 'En Ruta' ? `En camino con ${ev.technician}` : 'Asignando ruta...'}</span></p>
             </div>
             <span className="text-[8px] bg-teal-950 text-teal-400 border border-teal-800 px-2 py-0.5 rounded font-black uppercase">
               {ev.status === 'Revisión Técnico' ? 'Por Cerrar' : 'Vigente'}
@@ -567,8 +589,6 @@ const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
   const [type, setType] = useState(''); 
   const [addr, setAddr] = useState(currentUser?.address || '');
   const [meters, setMeters] = useState(15); 
-  
-  // Estado para capturar la cantidad seleccionada de cada producto dinámicamente
   const [quantities, setQuantities] = useState({});
 
   const handleUpdateQty = (id, delta) => {
@@ -580,7 +600,6 @@ const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
 
   const base = type === 'Empresa' ? 120000 : 65000;
   
-  // Cálculo automatizado basado en el catálogo inyectado por el admin
   const totalHardware = catalog.reduce((acc, item) => {
     const qty = quantities[item.id] || 0;
     return acc + (qty * item.price);
@@ -588,7 +607,6 @@ const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
   
   const total = base + totalHardware + (meters * 3500);
 
-  // Formatear el string de equipos dinámicamente para la orden
   const getHardwareSummaryString = () => {
     return catalog
       .filter(item => quantities[item.id] > 0)
@@ -711,7 +729,6 @@ const HelpPage = ({ currentUser, onSendAppointment }) => {
 export default function App() {
   const [view, setView] = useState('landing');
   
-  // Catálogo maestro sincronizado por localStorage
   const [cameraCatalog, setCameraCatalog] = useState(() => {
     const localCat = localStorage.getItem('cisven_catalog');
     return localCat ? JSON.parse(localCat) : [
@@ -737,7 +754,6 @@ export default function App() {
   useEffect(() => { localStorage.setItem('cisven_quotes', JSON.stringify(quotes)); }, [quotes]);
   useEffect(() => { localStorage.setItem('cisven_appointments', JSON.stringify(appointments)); }, [appointments]);
 
-  // Funciones para manipular productos del catálogo (Inyectar y Quitar celdas)
   const handleAddProduct = (label, price, stock) => {
     const newProd = { id: Date.now(), label, price, stock };
     setCameraCatalog([...cameraCatalog, newProd]);
@@ -762,7 +778,7 @@ export default function App() {
       address: targetUser?.address || 'Dirección Base', 
       phone: targetUser?.phone || '+56976543210',
       technician: 'Sin Asignar',
-      status: 'Asignado',
+      status: 'Pendiente Despacho', // Cambia a estado de espera de confirmación
       techObservation: ''
     };
     setAppointments([newJob, ...appointments]); 
@@ -777,7 +793,7 @@ export default function App() {
       address: quoteObject.address,
       phone: quoteObject.phone || '+56976543210', 
       technician: 'Sin Asignar',
-      status: 'Asignado',
+      status: 'Pendiente Despacho', // Cambia a estado de espera de confirmación
       techObservation: ''
     };
     setAppointments([approvedJob, ...appointments]);
@@ -788,13 +804,19 @@ export default function App() {
     setAppointments(prev => prev.map(item => item.id === id ? { ...item, technician: technicianName } : item));
   };
 
+  // ENLAZADOR DE FLUJO: El admin presiona el botón, se confirma el camión y pasa a 'En Ruta' para habilitar al técnico
+  const handleConfirmDispatch = (id) => {
+    setAppointments(prev => prev.map(item => 
+      item.id === id ? { ...item, status: 'En Ruta' } : item
+    ));
+  };
+
   const handleTechSubmitToAdmin = (id, techObservationText) => {
     setAppointments(prev => prev.map(item => 
       item.id === id ? { ...item, status: 'Revisión Técnico', techObservation: techObservationText } : item
     ));
   };
   
-  // EL ADMIN VALIDA Y CIERRA EL TRABAJO: Elimina las ventanas operativas y archiva de inmediato en el fichero histórico
   const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName) => {
     setAppointments(appointments.filter(j => j.id !== id));
     setUsers(prev => prev.map(u => 
@@ -824,6 +846,7 @@ export default function App() {
           appointments={appointments} 
           users={users} 
           onAssignTech={handleAssignTech} 
+          onConfirmDispatch={handleConfirmDispatch} // Inyección de la función puente
           onApproveQuote={handleApproveQuote}
           onArchiveJob={handleAdminArchiveJob}
         />
