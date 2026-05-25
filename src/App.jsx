@@ -249,9 +249,6 @@ function AdminDashboard({
           {selectedUserFolder && `Expediente: ${selectedUserFolder.name}`}
         </h1>
 
-        {/* ==========================================
-        CORRECCIÓN ARQUITECTÓNICA: TODOS LOS RENDERIZADOS DENTRO DEL CONTENEDOR CORRECTO
-        ========================================== */}
         {tab === 'ops' && (
           <div className="space-y-6">
             {/* RETORNO TÉCNICO */}
@@ -279,7 +276,7 @@ function AdminDashboard({
                           type="button" 
                           onClick={() => {
                             onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service, app.price || 45000, app.meters || 15);
-                            alert('✓ Órden archivada con éxito en el historial y sumada al panel de analíticas.');
+                            alert('✓ Órden archivada con éxito en el historial.');
                           }}
                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider"
                         >
@@ -316,7 +313,7 @@ function AdminDashboard({
               <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-3 flex flex-col justify-between">
                 <div>
                   <h3 className="font-bold text-red-400 uppercase text-[11px] tracking-wider">🔒 Bloqueo Preventivo de Calendario</h3>
-                  <p className="text-[10px] text-teal-400 mt-1">Seleccione un día para cerrarlo por completo. Los clientes no podrán tomar turnos en esa fecha.</p>
+                  <p className="text-[10px] text-teal-400 mt-1">Seleccione un día para cerrarlo por completo.</p>
                   <div className="flex gap-2 mt-3">
                     <input type="date" value={dateToBlock} onChange={e => setDateToBlock(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-lg text-white font-bold flex-1" />
                     <button 
@@ -333,7 +330,7 @@ function AdminDashboard({
                 </div>
                 {blockedDates.length > 0 && (
                   <div className="pt-2 border-t border-teal-900">
-                    <p className="text-[9px] font-black text-gray-400 uppercase">Días Cerrados de Forma Manual:</p>
+                    <p className="text-[9px] font-black text-gray-400 uppercase">Días Cerrados:</p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {blockedDates.map(d => (
                         <span key={d} className="bg-red-950 text-red-400 border border-red-900 px-2 py-0.5 rounded font-mono text-[9px] font-bold">{d}</span>
@@ -344,7 +341,7 @@ function AdminDashboard({
               </div>
             </div>
 
-            {/* FILA INFERIOR: COTIZACIONES INTERACTIVAS Y CITAS */}
+            {/* COTIZACIONES INTERACTIVAS Y CITAS */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
                 <h3 className="font-bold text-teal-400 border-b border-teal-900 pb-2 uppercase flex justify-between items-center">
@@ -369,7 +366,7 @@ function AdminDashboard({
                       <p className="text-[10px] text-emerald-400 font-bold mt-1 bg-teal-950/40 p-1 rounded inline-block border border-teal-900/40">📞 Fono: {q.phone}</p>
                     </div>
 
-                    {q.status === 'Pendiente' && (
+                    {q.status === 'Pending' || q.status === 'Pendiente' ? (
                       <div className="bg-[#0a3a37] p-2.5 rounded-xl border border-teal-800 space-y-2 mt-2">
                         <p className="text-[9px] font-black text-[#ecc245] uppercase tracking-wider">✏️ Formulario de Ajuste Comercial (Rebote Real):</p>
                         <div className="grid grid-cols-3 gap-1.5">
@@ -388,17 +385,17 @@ function AdminDashboard({
                           type="button"
                           onClick={() => {
                             const pReal = parseInt(localPrices[q.id]);
-                            const nReal = localNotes[q.id] || 'Presupuesto oficial ajustado por disponibilidad y metraje real.';
+                            const nReal = localNotes[q.id] || 'Presupuesto oficial ajustado.';
                             if (!pReal) return alert('Por favor, ingrese el Valor Real Ajustado.');
                             onAdjustQuote(q.id, pReal, nReal);
-                            alert('¡Rebote enviado con éxito! Los nuevos valores se reflejarán en el celular del cliente.');
+                            alert('¡Rebote enviado con éxito!');
                           }}
                           className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white font-black py-2 rounded-lg text-[9px] uppercase tracking-wider transition-colors"
                         >
                           ⚡ Lanzar Rebote de Valor Real
                         </button>
                       </div>
-                    )}
+                    ) : null}
 
                     {q.status === 'Aceptado por Cliente' && (
                       <button 
@@ -413,7 +410,7 @@ function AdminDashboard({
                 ))}
               </div>
 
-              {/* Citas y Rutas Activas */}
+              {/* CITAS EN TRÁNSITO */}
               <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
                 <h3 className="font-bold text-red-400 border-b border-teal-900 pb-2 uppercase">📅 Citas Técnicas en Tránsito ({activeAppointments.length})</h3>
                 {activeAppointments.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin órdenes activas en tránsito.</p> : activeAppointments.map(app => {
@@ -440,6 +437,7 @@ function AdminDashboard({
                             {staff.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                           {app.technician && app.technician !== 'Sin Asignar' && (
+                            /* CORRECCIÓN ABSOLUTA: Se cambió id por app.id para evitar crasheos y congelamientos de pantalla */
                             <button type="button" onClick={() => onConfirmDispatch(app.id)} className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white text-[10px] font-black py-1.5 rounded-lg uppercase tracking-wider transition-all">
                               🚀 Confirmar y Despachar Ruta
                             </button>
@@ -454,11 +452,9 @@ function AdminDashboard({
           </div>
         )}
 
-        {/* ==========================================
-        PANTALLA DE REPORTES (FIJADA Y REUBICADA PARA VERSE PERFECTO EN COMPUTADORAS)
-        ========================================== */}
+        {/* PANTALLA DE REPORTES PERFECTAMENTE DISPONIBLE */}
         {tab === 'reports' && (
-          <div className="space-y-6 w-full">
+          <div className="space-y-6 w-full block">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 shadow-xl flex flex-col items-center justify-center text-center">
                 <p className="text-[#ecc245] font-black uppercase text-[10px] tracking-widest mb-1">💰 Facturación Bruta Semanal</p>
@@ -485,7 +481,7 @@ function AdminDashboard({
                 <h3 className="font-black text-white uppercase text-xs tracking-wider">👷 Ranking de Eficiencia Técnica</h3>
                 <div className="space-y-3">
                   {Object.entries(analytics.techPerformance).length === 0 ? (
-                    <p className="text-teal-700 italic py-4 text-center">Inicie el cierre de órdenes en terreno para ver el ranking.</p>
+                    <p className="text-teal-700 italic py-4 text-center">Aguardando cierres de órdenes en terreno.</p>
                   ) : (
                     Object.entries(analytics.techPerformance)
                       .sort((a, b) => b[1] - a[1])
@@ -495,7 +491,7 @@ function AdminDashboard({
                             <span className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] ${index === 0 ? 'bg-[#ecc245] text-[#042120]' : 'bg-teal-900 text-teal-400'}`}>{index + 1}</span>
                             <span className="font-bold text-teal-100">{name}</span>
                           </div>
-                          <p className="text-white font-black text-xs">{count} Cierres Exitosos</p>
+                          <p className="text-white font-black text-xs">{count} Cierres</p>
                         </div>
                       ))
                   )}
@@ -507,7 +503,7 @@ function AdminDashboard({
                 <h3 className="font-black text-white uppercase text-xs tracking-wider">💎 Cartera de Clientes VIP (Inversión Semanal)</h3>
                 <div className="space-y-3">
                   {Object.entries(analytics.customerSpend).length === 0 ? (
-                    <p className="text-teal-700 italic py-4 text-center">Aguardando facturaciones archivadas.</p>
+                    <p className="text-teal-700 italic py-4 text-center">Sin facturaciones archivadas todavía.</p>
                   ) : (
                     Object.entries(analytics.customerSpend)
                       .sort((a, b) => b[1] - a[1])
@@ -639,7 +635,7 @@ function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
       <div className="flex-1 space-y-3">
         {jobsFiltered.length === 0 ? (
           <div className="p-6 text-center bg-[#0a3a37]/40 rounded-xl border border-teal-900 text-teal-600 italic">
-            📭 Sin rutas ni órdenes de instalación activas para este móvil.
+            📭 Sin rutas activas para este móvil.
           </div>
         ) : (
           jobsFiltered.map(job => (
@@ -653,7 +649,7 @@ function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
                   <p className="font-bold text-white mt-0.5">{job.address}</p>
                 </div>
                 <div className="border-t border-teal-900/60 pt-1.5">
-                  <p className="text-[8px] font-black text-[#ecc245] uppercase tracking-wide">📞 Teléfono de Contacto Directo:</p>
+                  <p className="text-[8px] font-black text-[#ecc245] uppercase">📞 Teléfono de Contacto Directo:</p>
                   <p className="font-black text-emerald-400 text-sm font-mono mt-0.5 bg-teal-950/80 px-2 py-1 rounded inline-block border border-teal-900/60">
                     {job.phone}
                   </p>
@@ -663,10 +659,10 @@ function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-[#ecc245] uppercase tracking-wide">Reporte de Terreno / Observación:</label>
                 <textarea 
-                  placeholder="Ej: El cliente posee 2 cámaras más que no pertenecen a la empresa..." 
+                  placeholder="Ej: Completado..." 
                   value={observations[job.id] || ''} 
                   onChange={(e) => setObservations({ ...observations, [job.id]: e.target.value })}
-                  className="w-full bg-[#042120] border border-teal-900 text-teal-100 rounded-xl p-2.5 text-xs focus:outline-none focus:border-teal-500 h-20 resize-none font-medium"
+                  className="w-full bg-[#042120] border border-teal-900 text-teal-100 rounded-xl p-2.5 text-xs focus:outline-none h-20 resize-none font-medium"
                 />
               </div>
               <button 
@@ -674,7 +670,7 @@ function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
                 onClick={() => {
                   const note = observations[job.id] || 'Instalación completada sin novedades.';
                   onSubmitToAdmin(job.id, note);
-                  alert('Reporte enviado. Pasó a la mesa de control del Administrador para su validación.');
+                  alert('Reporte enviado.');
                 }} 
                 className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white font-black py-2.5 rounded-xl uppercase tracking-wider text-xs transition-colors"
               >
@@ -870,7 +866,7 @@ const InteractiveQuoter = ({ catalog, currentUser, quotes, onSendQuote, onClient
           <button type="button" onClick={() => { onSendQuote(currentUser.name, type, getHardwareSummaryString(), total, addr, meters, currentUser?.phone); setStep(4); }} className="w-full bg-[#085a4f] text-white py-3 rounded-xl font-black uppercase tracking-wider">Enviar Propuesta a Central</button>
         </div>
       )}
-      {step === 4 && <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Presupuesto enviado con éxito. La central de mandos evaluará los costos reales.</p>}
+      {step === 4 && <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Presupuesto enviado con éxito.</p>}
     </div>
   );
 };
@@ -969,7 +965,7 @@ const HelpPage = ({ currentUser, onSendAppointment }) => {
 };
 
 // ==========================================
-// ORQUESTADOR CENTRAL GLOBAL
+// 7. ORQUESTADOR CENTRAL GLOBAL
 // ==========================================
 export default function App() {
   const [view, setView] = useState('landing');
