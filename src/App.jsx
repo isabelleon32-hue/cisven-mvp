@@ -174,7 +174,7 @@ function ClientAuth({ users, onRegister, onLoginSuccess }) {
 function AdminDashboard({ 
   setView, catalog, onAddProduct, onDeleteProduct, 
   quotes, onAdjustQuote, appointments, onManualSchedule, 
-  blockedDates, onToggleBlockDate, users, onAssignTech, onConfirmDispatch, onArchiveJob 
+  blockedDates, onToggleBlockDate, users, onAssignTech, onConfirmDispatch, onApproveQuote, onArchiveJob 
 }) {
   const [tab, setTab] = useState('ops');
   const [selectedUserFolder, setSelectedUserFolder] = useState(null);
@@ -183,12 +183,11 @@ function AdminDashboard({
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemStock, setNewItemStock] = useState('');
 
-  // Estados locales independientes para manejar la edición de rebotes en cada tarjeta
   const [localPrices, setLocalPrices] = useState({});
   const [localNotes, setLocalNotes] = useState({});
 
   const [extName, setExtName] = useState('');
-  const [extService, setExtService] = useState('Mantención Telefónica Externa');
+  const [extService, setExtService] = useState('Instalación de Sistema Nuevo');
   const [extAddr, setExtAddr] = useState('');
   const [extPhone, setExtPhone] = useState('');
   const [extDate, setExtDate] = useState('');
@@ -275,7 +274,7 @@ function AdminDashboard({
                           onClick={() => onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service)}
                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider"
                         >
-                          ✓ Validar, Archivar Historial Pipol y Limpiar Mesa
+                          ✓ Validar, Archivar Historial y Limpiar Mesa
                         </button>
                       </div>
                     </div>
@@ -293,8 +292,10 @@ function AdminDashboard({
                   <input type="tel" placeholder="Teléfono" value={extPhone} onChange={e => setExtPhone(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-lg text-white font-bold" />
                   <input type="text" placeholder="Dirección del Trabajo" value={extAddr} onChange={e => setExtAddr(e.target.value)} className="col-span-2 p-2 bg-[#042120] border border-teal-900 rounded-lg text-white font-bold" />
                   <select value={extService} onChange={e => setExtService(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-lg text-white font-bold">
-                    <option value="Instalación Telefónica Externa">Instalación Externa</option>
-                    <option value="Mantención Telefónica Externa">Mantención de Emergencia</option>
+                    <option value="Instalación de Sistema Nuevo">Instalación de Sistema Nuevo</option>
+                    <option value="Ampliación de Cobertura Domo">Ampliación de Cobertura Domo</option>
+                    <option value="Mantención de Enlaces y Conectividad">Mantención de Enlaces</option>
+                    <option value="Revisión Técnica por Falla o Alerta">Revisión por Falla</option>
                   </select>
                   <input type="date" value={extDate} onChange={e => setExtDate(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-lg text-white font-bold" />
                 </div>
@@ -336,8 +337,6 @@ function AdminDashboard({
 
             {/* FILA INFERIOR: COTIZACIONES INTERACTIVAS Y CITAS */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              
-              {/* COMPONENTE DE REBOTE CORREGIDO PARA QUE EL ADMIN PUEDA EDITAR VALORES EN VIVO */}
               <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
                 <h3 className="font-bold text-teal-400 border-b border-teal-900 pb-2 uppercase flex justify-between items-center">
                   <span>📦 Cotizaciones Inteligentes de Clientes</span>
@@ -361,10 +360,9 @@ function AdminDashboard({
                       <p className="text-[10px] text-emerald-400 font-bold mt-1 bg-teal-950/40 p-1 rounded inline-block border border-teal-900/40">📞 Fono: {q.phone}</p>
                     </div>
 
-                    {/* FORMULARIO DE REBOTE ACTIVO (Habilitado para edición en el Admin) */}
-                    {q.status === 'Pending' || q.status === 'Pendiente' ? (
+                    {q.status === 'Pendiente' && (
                       <div className="bg-[#0a3a37] p-2.5 rounded-xl border border-teal-800 space-y-2 mt-2">
-                        <p className="text-[9px] font-black text-[#ecc245] uppercase tracking-wider">✏️ Formulario de Ajuste Comercial:</p>
+                        <p className="text-[9px] font-black text-[#ecc245] uppercase tracking-wider">✏️ Formulario de Ajuste Comercial (Rebote Real):</p>
                         <div className="grid grid-cols-3 gap-1.5">
                           <input 
                             type="number" 
@@ -395,9 +393,8 @@ function AdminDashboard({
                           ⚡ Lanzar Rebote de Valor Real
                         </button>
                       </div>
-                    ) : null}
+                    )}
 
-                    {/* CONFIRMACIÓN DE CITA (Desbloqueado solo cuando el cliente aceptó el precio ajustado) */}
                     {q.status === 'Aceptado por Cliente' && (
                       <button 
                         type="button" 
@@ -581,7 +578,7 @@ function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
                   <p className="font-bold text-white mt-0.5">{job.address}</p>
                 </div>
                 <div className="border-t border-teal-900/60 pt-1.5">
-                  <p className="text-[8px] font-black text-[#ecc245] uppercase">📞 Teléfono de Contacto Directo:</p>
+                  <p className="text-[8px] font-black text-[#ecc245] uppercase tracking-wide">📞 Teléfono de Contacto Directo:</p>
                   <p className="font-black text-emerald-400 text-sm font-mono mt-0.5 bg-teal-950/80 px-2 py-1 rounded inline-block border border-teal-900/60">
                     {job.phone}
                   </p>
@@ -700,7 +697,7 @@ const InteractiveQuoter = ({ catalog, currentUser, quotes, onSendQuote, onClient
 
   return (
     <div className="p-5 space-y-4 text-xs font-sans">
-      {/* VISTA DE REBOTE EN EL CELULAR DEL CLIENTE */}
+      {/* CANAL DE REBOTES EN EL CELULAR DEL CLIENTE */}
       {myQuotes.length > 0 && (
         <div className="space-y-2">
           <p className="font-black text-[#ecc245] uppercase text-[9px] tracking-wider">🔄 Canal de Rebotes y Ofertas Oficiales:</p>
@@ -805,14 +802,13 @@ const InteractiveQuoter = ({ catalog, currentUser, quotes, onSendQuote, onClient
 };
 
 // ==========================================
-// COMPONENTE NUEVO: NUEVA MATRIZ VIVA DE SELECCIÓN DE CUPOS
+// MATRIZ VIVA DE SELECCIÓN DE CUPOS (GRILLA REFORMADA CON MÁS TAREAS)
 // ==========================================
 const AppointmentPage = ({ currentUser, appointments, blockedDates, onSendAppointment }) => {
   const [srv, setSrv] = useState(''); 
   const [selectedDate, setSelectedDate] = useState('');
   const [done, setDone] = useState(false);
 
-  // Generar dinámicamente los próximos 6 días hábiles a partir de hoy para armar la grilla visual
   const getNextDays = () => {
     const days = [];
     const baseDate = new Date();
@@ -850,15 +846,18 @@ const AppointmentPage = ({ currentUser, appointments, blockedDates, onSendAppoin
       ) : (
         <form onSubmit={handleClientScheduleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wide">1. Seleccione Tipo de Requerimiento</label>
+            <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wide">1. Seleccione Tipo de Requerimiento Técnico</label>
+            {/* LISTADO DE TAREAS EXPANDIDO Y ESCALABLE SOLICITADO */}
             <select value={srv} onChange={e => setSrv(e.target.value)} className="w-full p-3 bg-[#042120] border border-teal-900 rounded-xl text-teal-100 font-bold focus:outline-none" required>
-              <option value="">-- Seleccionar --</option>
-              <option value="Mantención de Enlaces">Mantención de Enlaces</option>
+              <option value="">-- Seleccionar Requerimiento --</option>
+              <option value="Instalación de Sistema Nuevo">Instalación de Sistema Nuevo</option>
               <option value="Ampliación de Cobertura Domo">Ampliación de Cobertura Domo</option>
+              <option value="Mantención de Enlaces y Conectividad">Mantención de Enlaces y Conectividad</option>
+              <option value="Revisión Técnica por Falla o Alerta">Revisión Técnica por Falla o Alerta</option>
+              <option value="Auditoría y Configuración de Seguridad AI">Auditoría y Configuración de Seguridad AI</option>
             </select>
           </div>
 
-          {/* DISEÑO MEJORADO: GRILLA DE CUPOS VIVA */}
           <div className="space-y-2">
             <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wide">2. Matriz de Disponibilidad Diaria (Máx. 6/Día)</label>
             <div className="grid grid-cols-2 gap-2">
@@ -1009,7 +1008,7 @@ export default function App() {
     const approvedJob = {
       id: Date.now(),
       user: quoteObject.user,
-      service: `Instalación: (${quoteObject.cam})`,
+      service: quoteObject.service.includes('Instalación') ? quoteObject.service : `Instalación: (${quoteObject.cam})`,
       date: quoteObject.date,
       address: quoteObject.address,
       phone: quoteObject.phone || '+56976543210', 
