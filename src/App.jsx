@@ -56,9 +56,9 @@ function Landing({ setView }) {
         <>
           <div className="bg-[#0a3a37] p-5 rounded-2xl text-left text-xs mb-8 space-y-2.5 border border-teal-800/40 shadow-2xl max-w-xs w-full text-gray-200">
             <p className="text-teal-400 font-bold uppercase text-[9px] tracking-wider border-b border-teal-900 pb-1">Módulos del Sistema:</p>
-            <p className="flex items-start gap-1.5"><span>•</span> Clientes: Cotización con rebote real y matriz de turnos viva.</p>
-            <p className="flex items-start gap-1.5"><span>•</span> Central: Carga externa, control de 6 cupos y bloqueos.</p>
-            <p className="flex items-start gap-1.5"><span>•</span> Técnicos: Cierre de rutas con reporte directo.</p>
+            <p className="flex items-start gap-1.5"><span>•</span> Central: Tráfico vivo, matriz de cupos y analítica de ventas.</p>
+            <p className="flex items-start gap-1.5"><span>•</span> Clientes: Rebote de precios real y agendamiento visual.</p>
+            <p className="flex items-start gap-1.5"><span>•</span> Técnicos: Cierre de rutas con retorno automático al admin.</p>
           </div>
           
           <div className="flex flex-col w-full max-w-xs gap-3 relative z-10">
@@ -174,7 +174,8 @@ function ClientAuth({ users, onRegister, onLoginSuccess }) {
 function AdminDashboard({ 
   setView, catalog, onAddProduct, onDeleteProduct, 
   quotes, onAdjustQuote, appointments, onManualSchedule, 
-  blockedDates, onToggleBlockDate, users, onAssignTech, onConfirmDispatch, onApproveQuote, onArchiveJob 
+  blockedDates, onToggleBlockDate, users, onAssignTech, onConfirmDispatch, onArchiveJob,
+  analytics // RECIBE LAS ANALÍTICAS PARA EL NUEVO MÓDULO
 }) {
   const [tab, setTab] = useState('ops');
   const [selectedUserFolder, setSelectedUserFolder] = useState(null);
@@ -222,14 +223,16 @@ function AdminDashboard({
 
   return (
     <div className="min-h-screen bg-[#042120] flex font-sans text-xs text-teal-100">
-      {/* Barra Lateral */}
+      {/* Barra Lateral (MANTENIDA SEGÚN IMAGEN CON NUEVA PESTAÑA) */}
       <div className="w-52 bg-[#0a3a37] border-r border-teal-900 p-4 flex flex-col justify-between flex-shrink-0 font-bold">
         <div className="space-y-6">
           <BrandLogo />
           <nav className="flex flex-col gap-1.5 pt-4">
-            <button onClick={() => { setTab('ops'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg ${tab === 'ops' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📊 Tráfico Operativo</button>
-            <button onClick={() => { setTab('price'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg ${tab === 'price' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📦 Catálogo y Tarifas</button>
-            <button onClick={() => { setTab('users'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg ${tab === 'users' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>👥 Abonados ({users.length})</button>
+            <button onClick={() => { setTab('ops'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'ops' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📊 Tráfico Operativo</button>
+            <button onClick={() => { setTab('price'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'price' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📦 Catálogo y Tarifas</button>
+            <button onClick={() => { setTab('users'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'users' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>👥 Abonados ({users.length})</button>
+            {/* NUEVA PESTAÑA DE ANALÍTICAS SOLICITADA */}
+            <button onClick={() => { setTab('reports'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'reports' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📈 Reportes de Producción</button>
           </nav>
         </div>
         <button onClick={() => setView('landing')} className="bg-[#042120] text-center font-bold py-2 rounded-xl text-teal-400 border border-teal-900">
@@ -240,9 +243,10 @@ function AdminDashboard({
       {/* Panel Principal */}
       <div className="flex-1 p-6 overflow-y-auto space-y-4">
         <h1 className="text-base font-black text-white uppercase tracking-wider">
-          {tab === 'ops' && 'Mesa de Control de Incidentes, Despachos y Agendamiento'}
+          {tab === 'ops' && 'Mesa de Control de Incidentes y Despachos'}
           {tab === 'price' && 'Maestro de Inventario y Carga de Existencias'}
           {tab === 'users' && !selectedUserFolder && 'Fichero General de Abonados'}
+          {tab === 'reports' && 'Inteligencia de Negocios y Rendimiento Semanal'}
           {selectedUserFolder && `Expediente: ${selectedUserFolder.name}`}
         </h1>
 
@@ -271,10 +275,7 @@ function AdminDashboard({
                       <div className="flex gap-2 pt-1">
                         <button 
                           type="button" 
-                          onClick={() => {
-                            onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service, app.price || 0);
-                            alert('✓ Órden archivada con éxito en la bitácora histórica y sumada al registro de producción semanal.');
-                          }}
+                          onClick={() => onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service, app.price || 0, app.meters || 0)}
                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider"
                         >
                           ✓ Validar, Archivar Historial y Limpiar Mesa
@@ -286,7 +287,7 @@ function AdminDashboard({
               </div>
             )}
 
-            {/* SECCIÓN INTERMEDIA: AGENDA TELEFÓNICA Y BLOQUEOS */}
+            {/* AGENDA TELEFÓNICA Y BLOQUEOS */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <form onSubmit={handleExternalScheduleSubmit} className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-3">
                 <h3 className="font-bold text-[#ecc245] uppercase text-[11px] tracking-wider">➕ Agendar Cita Manual (Llamados por fuera de la App)</h3>
@@ -338,7 +339,7 @@ function AdminDashboard({
               </div>
             </div>
 
-            {/* FILA INFERIOR: COTIZACIONES INTERACTIVAS Y CITAS */}
+            {/* COTIZACIONES INTERACTIVAS Y CITAS */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
                 <h3 className="font-bold text-teal-400 border-b border-teal-900 pb-2 uppercase flex justify-between items-center">
@@ -368,16 +369,12 @@ function AdminDashboard({
                         <p className="text-[9px] font-black text-[#ecc245] uppercase tracking-wider">✏️ Formulario de Ajuste Comercial (Rebote Real):</p>
                         <div className="grid grid-cols-3 gap-1.5">
                           <input 
-                            type="number" 
-                            placeholder="Valor Real ($)" 
-                            value={localPrices[q.id] || ''}
+                            type="number" placeholder="Valor Real ($)" value={localPrices[q.id] || ''}
                             onChange={e => setLocalPrices({...localPrices, [q.id]: e.target.value})}
                             className="col-span-1 p-2 bg-[#042120] border border-teal-950 rounded-lg text-xs text-[#ecc245] font-mono font-bold focus:outline-none"
                           />
                           <input 
-                            type="text" 
-                            placeholder="Nota de ajuste..." 
-                            value={localNotes[q.id] || ''}
+                            type="text" placeholder="Nota de ajuste..." value={localNotes[q.id] || ''}
                             onChange={e => setLocalNotes({...localNotes, [q.id]: e.target.value})}
                             className="col-span-2 p-2 bg-[#042120] border border-teal-950 rounded-lg text-xs text-white focus:outline-none"
                           />
@@ -389,7 +386,7 @@ function AdminDashboard({
                             const nReal = localNotes[q.id] || 'Presupuesto oficial ajustado por disponibilidad y metraje real.';
                             if (!pReal) return alert('Por favor, ingrese el Valor Real Ajustado.');
                             onAdjustQuote(q.id, pReal, nReal);
-                            alert('¡Rebote enviado con éxito! Los nuevos valores se reflejarán en el celular del cliente.');
+                            alert('¡Rebote enviado con éxito!');
                           }}
                           className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white font-black py-2 rounded-lg text-[9px] uppercase tracking-wider transition-colors"
                         >
@@ -398,15 +395,11 @@ function AdminDashboard({
                       </div>
                     )}
 
-                    {/* CORRECCIÓN SÓLIDA DEL BOTÓN DE PASO A TRÁNSITO */}
                     {q.status === 'Aceptado por Cliente' && (
                       <button 
                         type="button" 
-                        onClick={() => { 
-                          onApproveQuote(q); 
-                          alert('✓ Presupuesto confirmado. El ticket saltó de inmediato a la sección de Citas Técnicas en Tránsito.'); 
-                        }}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2.5 rounded-xl uppercase text-[10px] tracking-wider mt-1"
+                        onClick={() => { onApproveQuote(q); alert('✓ Cita técnica activada en tránsito.'); }}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2.5 rounded-xl uppercase text-[10px] tracking-wider mt-1 shadow-xl active:scale-95 transition-all"
                       >
                         ✓ CONFIRMAR Y CREAR CITA EN TRÁNSITO
                       </button>
@@ -415,7 +408,7 @@ function AdminDashboard({
                 ))}
               </div>
 
-              {/* Citas y Rutas Activas */}
+              {/* CITAS EN TRÁNSITO */}
               <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
                 <h3 className="font-bold text-red-400 border-b border-teal-900 pb-2 uppercase">📅 Citas Técnicas en Tránsito ({activeAppointments.length})</h3>
                 {activeAppointments.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin órdenes activas en tránsito.</p> : activeAppointments.map(app => {
@@ -451,6 +444,87 @@ function AdminDashboard({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODULO NUEVO: REPORTES DE PRODUCCIÓN SEMANAL (BUSINESS INTELLIGENCE) */}
+        {tab === 'reports' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 shadow-xl flex flex-col items-center justify-center text-center">
+                <p className="text-[#ecc245] font-black uppercase text-[10px] tracking-widest mb-1">💰 Facturación Bruta Semanal</p>
+                <p className="text-3xl font-black text-white font-mono">${analytics.totalRevenue.toLocaleString('es-CL')}</p>
+                <div className="w-full h-1 bg-teal-900 rounded-full mt-4 overflow-hidden">
+                  <div className="h-full bg-[#ecc245]" style={{width: '65%'}}></div>
+                </div>
+              </div>
+              <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 shadow-xl flex flex-col items-center justify-center text-center">
+                <p className="text-teal-400 font-black uppercase text-[10px] tracking-widest mb-1">🔧 Trabajos Finalizados</p>
+                <p className="text-3xl font-black text-white font-mono">{analytics.closedTicketsCount}</p>
+                <p className="text-[9px] text-teal-600 mt-2 font-bold uppercase">Mesa Operativa Limpia al 100%</p>
+              </div>
+              <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 shadow-xl flex flex-col items-center justify-center text-center">
+                <p className="text-emerald-400 font-black uppercase text-[10px] tracking-widest mb-1">📍 Despliegue de Fibra/UTP</p>
+                <p className="text-3xl font-black text-white font-mono">{analytics.totalMeters}m</p>
+                <p className="text-[9px] text-emerald-700 mt-2 font-bold uppercase">Metraje Real en Terreno</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              {/* RANKING DE EFICIENCIA TÉCNICA */}
+              <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 space-y-4">
+                <h3 className="font-black text-white uppercase text-xs tracking-wider flex items-center gap-2">
+                  <span>👷 Ranking de Eficiencia Técnica</span>
+                </h3>
+                <div className="space-y-3">
+                  {Object.entries(analytics.techPerformance).length === 0 ? (
+                    <p className="text-teal-700 italic py-4 text-center">Inicie el cierre de órdenes para ver el ranking.</p>
+                  ) : (
+                    Object.entries(analytics.techPerformance)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([name, count], index) => (
+                        <div key={name} className="flex items-center justify-between p-3 bg-[#042120] rounded-xl border border-teal-900">
+                          <div className="flex items-center gap-3">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] ${index === 0 ? 'bg-[#ecc245] text-[#042120]' : 'bg-teal-900 text-teal-400'}`}>{index + 1}</span>
+                            <span className="font-bold text-teal-100">{name}</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-white font-black">{count} Cierres</p>
+                            <p className="text-[8px] text-teal-600 uppercase font-black tracking-tighter">Eficiencia del 100%</p>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+
+              {/* PODIO DE ABONADOS VIP */}
+              <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 space-y-4">
+                <h3 className="font-black text-white uppercase text-xs tracking-wider flex items-center gap-2">
+                  <span>💎 Cartera de Clientes VIP (Inversión Semanal)</span>
+                </h3>
+                <div className="space-y-3">
+                  {Object.entries(analytics.customerSpend).length === 0 ? (
+                    <p className="text-teal-700 italic py-4 text-center">Aguardando facturaciones reales.</p>
+                  ) : (
+                    Object.entries(analytics.customerSpend)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([name, money]) => (
+                        <div key={name} className="p-3 bg-[#042120] rounded-xl border border-emerald-900/40 flex justify-between items-center">
+                          <span className="font-black text-white">{name}</span>
+                          <div className="text-right">
+                            <p className="text-[#ecc245] font-black font-mono text-sm">${money.toLocaleString('es-CL')}</p>
+                            <p className="text-[8px] text-emerald-500 uppercase font-bold tracking-widest">Abonado Potencial</p>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
+                <div className="bg-[#042120]/60 p-3 rounded-xl border border-dashed border-teal-900 text-[10px] text-teal-500 text-center italic">
+                  * Estos datos se actualizan automáticamente al presionar el botón "Validar y Archivar" en la mesa de control.
+                </div>
               </div>
             </div>
           </div>
@@ -625,7 +699,7 @@ function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
 }
 
 // ==========================================
-// 6. COMPONENTES DEL CLIENTE LAYOUT MOBILE
+// 6. COMPONENTES DEL CLIENTE MOBILE
 // ==========================================
 const ClientLayout = ({ children, setView, onLogout }) => (
   <div className="min-h-screen bg-[#042120] flex flex-col max-w-md mx-auto shadow-2xl relative border-x border-teal-900 text-white font-sans">
@@ -704,7 +778,6 @@ const InteractiveQuoter = ({ catalog, currentUser, quotes, onSendQuote, onClient
 
   return (
     <div className="p-5 space-y-4 text-xs font-sans">
-      {/* CANAL DE REBOTES EN EL CELULAR DEL CLIENTE */}
       {myQuotes.length > 0 && (
         <div className="space-y-2">
           <p className="font-black text-[#ecc245] uppercase text-[9px] tracking-wider">🔄 Canal de Rebotes y Ofertas Oficiales:</p>
@@ -732,7 +805,7 @@ const InteractiveQuoter = ({ catalog, currentUser, quotes, onSendQuote, onClient
                     type="button"
                     onClick={() => {
                       onClientAcceptFinalPrice(mq.id);
-                      alert('🤝 ¡Presupuesto aceptado! La central de CISVEN ya fue notificada para asignar el camión técnico.');
+                      alert('🤝 ¡Presupuesto aceptado!');
                     }}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 rounded-lg uppercase tracking-wider text-[10px] mt-1 shadow-lg transition-all"
                   >
@@ -803,7 +876,7 @@ const InteractiveQuoter = ({ catalog, currentUser, quotes, onSendQuote, onClient
           <button type="button" onClick={() => { onSendQuote(currentUser.name, type, getHardwareSummaryString(), total, addr, meters, currentUser?.phone); setStep(4); }} className="w-full bg-[#085a4f] text-white py-3 rounded-xl font-black uppercase tracking-wider">Enviar Propuesta a Central</button>
         </div>
       )}
-      {step === 4 && <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Presupuesto enviado con éxito. La central de mandos evaluará los costos reales.</p>}
+      {step === 4 && <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Presupuesto enviado con éxito.</p>}
     </div>
   );
 };
@@ -823,7 +896,6 @@ const AppointmentPage = ({ currentUser, appointments, blockedDates, onSendAppoin
       const next = new Date(baseDate);
       next.setDate(baseDate.getDate() + i);
       const str = next.toISOString().split('T')[0];
-      
       const dayLabel = next.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
       days.push({ dateStr: str, label: dayLabel });
     }
@@ -836,11 +908,6 @@ const AppointmentPage = ({ currentUser, appointments, blockedDates, onSendAppoin
     e.preventDefault();
     if (!srv) return alert('Por favor, seleccione el requerimiento técnico.');
     if (!selectedDate) return alert('Por favor, seleccione un día de la matriz de cupos de abajo.');
-
-    const countForDay = appointments.filter(a => a.date === selectedDate).length;
-    if (countForDay >= 6) return alert('🚫 Esta fecha ya alcanzó el tope máximo de 6 visitas.');
-    if (blockedDates.includes(selectedDate)) return alert('🔒 Esta fecha está cerrada por la central.');
-
     onSendAppointment(currentUser.name, srv, selectedDate);
     setDone(true);
   };
@@ -863,7 +930,6 @@ const AppointmentPage = ({ currentUser, appointments, blockedDates, onSendAppoin
               <option value="Auditoría y Configuración de Seguridad AI">Auditoría y Configuración de Seguridad AI</option>
             </select>
           </div>
-
           <div className="space-y-2">
             <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wide">2. Matriz de Disponibilidad Diaria (Máx. 6/Día)</label>
             <div className="grid grid-cols-2 gap-2">
@@ -871,26 +937,13 @@ const AppointmentPage = ({ currentUser, appointments, blockedDates, onSendAppoin
                 const count = appointments.filter(a => a.date === d.dateStr).length;
                 const isBlocked = blockedDates.includes(d.dateStr);
                 const isFull = count >= 6;
-
                 let cardStyle = "border-teal-900 bg-[#042120] text-gray-300";
                 let badge = `🟢 ${count}/6 Cupos`;
-
-                if (isBlocked) {
-                  cardStyle = "border-red-950 bg-red-950/20 text-red-400 opacity-60 cursor-not-allowed";
-                  badge = "🔒 Cerrado";
-                } else if (isFull) {
-                  cardStyle = "border-red-900 bg-red-900/10 text-red-500 opacity-60 cursor-not-allowed";
-                  badge = "🚫 Completo";
-                } else if (selectedDate === d.dateStr) {
-                  cardStyle = "border-[#ecc245] bg-[#ecc245]/10 text-[#ecc245] shadow-lg scale-[1.02]";
-                }
-
+                if (isBlocked) { cardStyle = "border-red-950 bg-red-950/20 text-red-400 opacity-60 cursor-not-allowed"; badge = "🔒 Cerrado"; }
+                else if (isFull) { cardStyle = "border-red-900 bg-red-900/10 text-red-500 opacity-60 cursor-not-allowed"; badge = "🚫 Completo"; }
+                else if (selectedDate === d.dateStr) { cardStyle = "border-[#ecc245] bg-[#ecc245]/10 text-[#ecc245] shadow-lg scale-[1.02]"; }
                 return (
-                  <div 
-                    key={d.dateStr}
-                    onClick={() => { if (!isBlocked && !isFull) setSelectedDate(d.dateStr); }}
-                    className={`p-3 rounded-xl border text-center font-bold cursor-pointer transition-all flex flex-col justify-between h-16 ${cardStyle}`}
-                  >
+                  <div key={d.dateStr} onClick={() => { if (!isBlocked && !isFull) setSelectedDate(d.dateStr); }} className={`p-3 rounded-xl border text-center font-bold cursor-pointer transition-all flex flex-col justify-between h-16 ${cardStyle}`}>
                     <span className="capitalize text-[11px] font-black">{d.label}</span>
                     <span className="text-[9px] font-mono mt-1 font-black block">{badge}</span>
                   </div>
@@ -898,10 +951,7 @@ const AppointmentPage = ({ currentUser, appointments, blockedDates, onSendAppoin
               })}
             </div>
           </div>
-
-          <button type="submit" className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white py-3 rounded-xl font-black uppercase tracking-wider shadow-md mt-2">
-            Confirmar Reserva de Cupo Técnico
-          </button>
+          <button type="submit" className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white py-3 rounded-xl font-black uppercase tracking-wider shadow-md mt-2">Confirmar Reserva de Cupo Técnico</button>
         </form>
       )}
     </div>
@@ -951,15 +1001,21 @@ export default function App() {
   const [appointments, setAppointments] = useState(() => JSON.parse(localStorage.getItem('cisven_appointments')) || []);
   const [blockedDates, setBlockedDates] = useState(() => JSON.parse(localStorage.getItem('cisven_blocked_dates')) || []);
   
-  // ESTRUCTURA DE AUDITORÍA SEMANAL PREPARADA (ESTADÍSTICAS FUTURAS)
-  const [weeklyAnalytics, setWeeklyAnalytics] = useState(() => JSON.parse(localStorage.getItem('cisven_analytics')) || { totalRevenue: 0, closedTicketsCount: 0, techPerformance: {} });
+  // ANALÍTICA PERSISTENTE SOLICITADA
+  const [analytics, setAnalytics] = useState(() => JSON.parse(localStorage.getItem('cisven_analytics')) || { 
+    totalRevenue: 0, 
+    closedTicketsCount: 0, 
+    totalMeters: 0, 
+    techPerformance: {}, 
+    customerSpend: {} 
+  });
 
   useEffect(() => { localStorage.setItem('cisven_catalog', JSON.stringify(cameraCatalog)); }, [cameraCatalog]);
   useEffect(() => { localStorage.setItem('cisven_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('cisven_quotes', JSON.stringify(quotes)); }, [quotes]);
   useEffect(() => { localStorage.setItem('cisven_appointments', JSON.stringify(appointments)); }, [appointments]);
   useEffect(() => { localStorage.setItem('cisven_blocked_dates', JSON.stringify(blockedDates)); }, [blockedDates]);
-  useEffect(() => { localStorage.setItem('cisven_analytics', JSON.stringify(weeklyAnalytics)); }, [weeklyAnalytics]);
+  useEffect(() => { localStorage.setItem('cisven_analytics', JSON.stringify(analytics)); }, [analytics]);
 
   const handleAddProduct = (label, price, stock) => {
     const newProd = { id: Date.now(), label, price, stock };
@@ -972,10 +1028,8 @@ export default function App() {
 
   const handleSendQuote = (user, type, cam, total, address, mtrs, clientPhone) => {
     const phoneToInject = clientPhone || users.find(u => u.name === user)?.phone || '+56976543210';
-    const tomorrowStr = new Date();
-    tomorrowStr.setDate(tomorrowStr.getDate() + 1);
+    const tomorrowStr = new Date(); tomorrowStr.setDate(tomorrowStr.getDate() + 1);
     const dateStr = tomorrowStr.toISOString().split('T')[0];
-    
     setQuotes([{ id: Date.now(), user, type, cam, total, address, meters: mtrs, phone: phoneToInject, status: 'Pendiente', date: dateStr }, ...quotes]);
   };
 
@@ -991,30 +1045,22 @@ export default function App() {
     const targetUser = users.find(u => u.name === userName);
     const newJob = { 
       id: Date.now(), user: userName, service, date, 
-      address: targetUser?.address || 'Dirección Base', 
-      phone: targetUser?.phone || '+56976543210',
-      technician: 'Sin Asignar', status: 'Pendiente Despacho', techObservation: '', price: 45000
+      address: targetUser?.address || 'Dirección Base', phone: targetUser?.phone || '+56976543210',
+      technician: 'Sin Asignar', status: 'Asignado', techObservation: '', price: 45000, meters: 15
     };
     setAppointments([newJob, ...appointments]); 
   };
 
   const handleManualSchedule = (name, service, date, address, phone) => {
-    const extJob = {
-      id: Date.now(), user: name, service, date, address, phone,
-      technician: 'Sin Asignar', status: 'Pendiente Despacho', techObservation: '', price: 45000
-    };
+    const extJob = { id: Date.now(), user: name, service, date, address, phone, technician: 'Sin Asignar', status: 'Asignado', techObservation: '', price: 45000, meters: 15 };
     setAppointments([extJob, ...appointments]);
   };
 
   const handleToggleBlockDate = (dateString) => {
-    if (blockedDates.includes(dateString)) {
-      setBlockedDates(blockedDates.filter(d => d !== dateString));
-    } else {
-      setBlockedDates([...blockedDates, dateString]);
-    }
+    if (blockedDates.includes(dateString)) { setBlockedDates(blockedDates.filter(d => d !== dateString)); } 
+    else { setBlockedDates([...blockedDates, dateString]); }
   };
 
-  // CORRECCIÓN CLAVE EN EL MOTOR DE ASIGNACIÓN DE TRÁNSITO
   const handleApproveQuote = (quoteObject) => {
     const approvedJob = {
       id: Date.now(),
@@ -1023,10 +1069,9 @@ export default function App() {
       date: quoteObject.date,
       address: quoteObject.address,
       phone: quoteObject.phone || '+56976543210', 
-      technician: 'Sin Asignar', 
-      status: 'Asignado', // Entra directo como asignado para que no falle el gatillo
-      techObservation: '',
-      price: quoteObject.adjustedTotal || quoteObject.total
+      technician: 'Sin Asignar', status: 'Asignado', techObservation: '',
+      price: quoteObject.adjustedTotal || quoteObject.total,
+      meters: quoteObject.meters || 0
     };
     setAppointments([approvedJob, ...appointments]);
     setQuotes(quotes.filter(q => q.id !== quoteObject.id));
@@ -1041,38 +1086,27 @@ export default function App() {
   };
 
   const handleTechSubmitToAdmin = (id, techObservationText) => {
-    setAppointments(prev => prev.map(item => 
-      item.id === id ? { ...item, status: 'Revisión Técnico', techObservation: techObservationText } : item
-    ));
+    setAppointments(prev => prev.map(item => item.id === id ? { ...item, status: 'Revisión Técnico', techObservation: techObservationText } : item));
   };
   
-  // EL ADMIN VALIDA, LIKIDA LA MESA Y COMPUTA LAS MÉTRICAS DE PRODUCCIÓN COMPORTAMIENTO
-  const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName, ticketPrice) => {
+  const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName, ticketPrice, ticketMeters) => {
     setAppointments(appointments.filter(j => j.id !== id));
     
-    // 1. Inyectar en Fichero Histórico del Abonado
     setUsers(prev => prev.map(u => 
       u.name === userName 
-        ? { 
-            ...u, 
-            historyLog: [
-              { id: Date.now(), date: new Date().toLocaleDateString('es-CL'), type: serviceName, technician: technicianName, detail: finalObservation }, 
-              ...(u.historyLog || [])
-            ] 
-          } 
+        ? { ...u, historyLog: [{ id: Date.now(), date: new Date().toLocaleDateString('es-CL'), type: serviceName, technician: technicianName, detail: finalObservation }, ...(u.historyLog || [])] } 
         : u
     ));
 
-    // 2. Acumular en Base de Datos de Métricas de Rendimiento Semanal (Preparado para la Fase 2 de Gráficos)
-    setWeeklyAnalytics(prev => {
+    setAnalytics(prev => {
       const currentTechCount = prev.techPerformance[technicianName] || 0;
+      const currentCustomerSpend = prev.customerSpend[userName] || 0;
       return {
-        totalRevenue: prev.totalRevenue + (ticketPrice || 45000),
+        totalRevenue: prev.totalRevenue + (ticketPrice || 0),
         closedTicketsCount: prev.closedTicketsCount + 1,
-        techPerformance: {
-          ...prev.techPerformance,
-          [technicianName]: currentTechCount + 1
-        }
+        totalMeters: prev.totalMeters + (ticketMeters || 0),
+        techPerformance: { ...prev.techPerformance, [technicianName]: currentTechCount + 1 },
+        customerSpend: { ...prev.customerSpend, [userName]: currentCustomerSpend + (ticketPrice || 0) }
       };
     });
   };
@@ -1080,7 +1114,6 @@ export default function App() {
   return (
     <div>
       {view === 'landing' && <Landing setView={setView} />}
-      
       {view === 'admin-ops' && (
         <AdminDashboard 
           setView={setView} catalog={cameraCatalog} 
@@ -1090,13 +1123,12 @@ export default function App() {
           blockedDates={blockedDates} onToggleBlockDate={handleToggleBlockDate}
           users={users} onAssignTech={handleAssignTech} onConfirmDispatch={handleConfirmDispatch}
           onApproveQuote={handleApproveQuote} onArchiveJob={handleAdminArchiveJob}
+          analytics={analytics}
         />
       )}
-      
       {view === 'tecnico-app' && (
         <TechnicianApp setView={setView} techJobs={appointments} onSubmitToAdmin={handleTechSubmitToAdmin} />
       )}
-      
       {view.startsWith('app-') && (
         currentUser === null ? (
           <ClientAuth users={users} onRegister={(u) => setUsers([...users, u])} onLoginSuccess={(u) => { setCurrentUser(u); setView('app-dashboard'); }} />
