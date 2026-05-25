@@ -249,6 +249,9 @@ function AdminDashboard({
           {selectedUserFolder && `Expediente: ${selectedUserFolder.name}`}
         </h1>
 
+        {/* ==========================================
+        CORRECCIÓN ARQUITECTÓNICA: TODOS LOS RENDERIZADOS DENTRO DEL CONTENEDOR CORRECTO
+        ========================================== */}
         {tab === 'ops' && (
           <div className="space-y-6">
             {/* RETORNO TÉCNICO */}
@@ -437,7 +440,7 @@ function AdminDashboard({
                             {staff.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                           {app.technician && app.technician !== 'Sin Asignar' && (
-                            <button type="button" onClick={() => onConfirmDispatch(id)} className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white text-[10px] font-black py-1.5 rounded-lg uppercase tracking-wider transition-all">
+                            <button type="button" onClick={() => onConfirmDispatch(app.id)} className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white text-[10px] font-black py-1.5 rounded-lg uppercase tracking-wider transition-all">
                               🚀 Confirmar y Despachar Ruta
                             </button>
                           )}
@@ -452,16 +455,16 @@ function AdminDashboard({
         )}
 
         {/* ==========================================
-        CORRECCIÓN TÉCNICA: RENDERIZADO IDÉNTICO DEL TAB DE REPORTES
+        PANTALLA DE REPORTES (FIJADA Y REUBICADA PARA VERSE PERFECTO EN COMPUTADORAS)
         ========================================== */}
         {tab === 'reports' && (
-          <div className="space-y-6 animate-fadeIn">
+          <div className="space-y-6 w-full">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 shadow-xl flex flex-col items-center justify-center text-center">
                 <p className="text-[#ecc245] font-black uppercase text-[10px] tracking-widest mb-1">💰 Facturación Bruta Semanal</p>
                 <p className="text-3xl font-black text-white font-mono">${analytics.totalRevenue.toLocaleString('es-CL')}</p>
                 <div className="w-full h-1 bg-teal-900 rounded-full mt-4 overflow-hidden">
-                  <div className="h-full bg-[#ecc245]" style={{width: '65%'}}></div>
+                  <div className="h-full bg-[#ecc245]" style={{width: '100%'}}></div>
                 </div>
               </div>
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 shadow-xl flex flex-col items-center justify-center text-center">
@@ -472,19 +475,17 @@ function AdminDashboard({
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 shadow-xl flex flex-col items-center justify-center text-center">
                 <p className="text-emerald-400 font-black uppercase text-[10px] tracking-widest mb-1">📍 Despliegue de Fibra/UTP</p>
                 <p className="text-3xl font-black text-white font-mono">{analytics.totalMeters}m</p>
-                <p className="text-[9px] text-emerald-700 mt-2 font-bold uppercase">Metraje Real en Terreno</p>
+                <p className="text-[9px] text-emerald-700 mt-2 font-bold uppercase">Metraje Real Sincronizado</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {/* RANKING DE EFICIENCIA TÉCNICA */}
+              {/* RANKING DE TÉCNICOS */}
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 space-y-4">
-                <h3 className="font-black text-white uppercase text-xs tracking-wider flex items-center gap-2">
-                  <span>👷 Ranking de Eficiencia Técnica</span>
-                </h3>
+                <h3 className="font-black text-white uppercase text-xs tracking-wider">👷 Ranking de Eficiencia Técnica</h3>
                 <div className="space-y-3">
                   {Object.entries(analytics.techPerformance).length === 0 ? (
-                    <p className="text-teal-700 italic py-4 text-center">Inicie el cierre de órdenes para ver el ranking.</p>
+                    <p className="text-teal-700 italic py-4 text-center">Inicie el cierre de órdenes en terreno para ver el ranking.</p>
                   ) : (
                     Object.entries(analytics.techPerformance)
                       .sort((a, b) => b[1] - a[1])
@@ -494,40 +495,29 @@ function AdminDashboard({
                             <span className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] ${index === 0 ? 'bg-[#ecc245] text-[#042120]' : 'bg-teal-900 text-teal-400'}`}>{index + 1}</span>
                             <span className="font-bold text-teal-100">{name}</span>
                           </div>
-                          <div className="text-right">
-                            <p className="text-white font-black">{count} Cierres</p>
-                            <p className="text-[8px] text-teal-600 uppercase font-black tracking-tighter">Eficiencia del 100%</p>
-                          </div>
+                          <p className="text-white font-black text-xs">{count} Cierres Exitosos</p>
                         </div>
                       ))
                   )}
                 </div>
               </div>
 
-              {/* PODIO DE ABONADOS VIP */}
+              {/* CLIENTES VIP */}
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 space-y-4">
-                <h3 className="font-black text-white uppercase text-xs tracking-wider flex items-center gap-2">
-                  <span>💎 Cartera de Clientes VIP (Inversión Semanal)</span>
-                </h3>
+                <h3 className="font-black text-white uppercase text-xs tracking-wider">💎 Cartera de Clientes VIP (Inversión Semanal)</h3>
                 <div className="space-y-3">
                   {Object.entries(analytics.customerSpend).length === 0 ? (
-                    <p className="text-teal-700 italic py-4 text-center">Aguardando facturaciones reales.</p>
+                    <p className="text-teal-700 italic py-4 text-center">Aguardando facturaciones archivadas.</p>
                   ) : (
                     Object.entries(analytics.customerSpend)
                       .sort((a, b) => b[1] - a[1])
                       .map(([name, money]) => (
                         <div key={name} className="p-3 bg-[#042120] rounded-xl border border-emerald-900/40 flex justify-between items-center">
                           <span className="font-black text-white">{name}</span>
-                          <div className="text-right">
-                            <p className="text-[#ecc245] font-black font-mono text-sm">${money.toLocaleString('es-CL')}</p>
-                            <p className="text-[8px] text-emerald-500 uppercase font-bold tracking-widest">Abonado Potencial</p>
-                          </div>
+                          <span className="text-[#ecc245] font-black font-mono">${money.toLocaleString('es-CL')}</span>
                         </div>
                       ))
                   )}
-                </div>
-                <div className="bg-[#042120]/60 p-3 rounded-xl border border-dashed border-teal-900 text-[10px] text-teal-500 text-center italic">
-                  * Estos datos se calculizan automáticamente al presionar el botón "Validar y Archivar" en la mesa de control.
                 </div>
               </div>
             </div>
@@ -978,6 +968,9 @@ const HelpPage = ({ currentUser, onSendAppointment }) => {
   );
 };
 
+// ==========================================
+// ORQUESTADOR CENTRAL GLOBAL
+// ==========================================
 export default function App() {
   const [view, setView] = useState('landing');
   
@@ -1071,7 +1064,7 @@ export default function App() {
       phone: quoteObject.phone || '+56976543210', 
       technician: 'Sin Asignar', status: 'Asignado', techObservation: '',
       price: quoteObject.adjustedTotal || quoteObject.total,
-      meters: quoteObject.meters || 0
+      meters: quoteObject.meters || 15
     };
     setAppointments([approvedJob, ...appointments]);
     setQuotes(quotes.filter(q => q.id !== quoteObject.id));
@@ -1104,7 +1097,7 @@ export default function App() {
       return {
         totalRevenue: prev.totalRevenue + (ticketPrice || 0),
         closedTicketsCount: prev.closedTicketsCount + 1,
-        totalMeters: prev.totalMeters + (ticketMeters || 0),
+        totalMeters: prev.totalMeters + (ticketMeters || 15),
         techPerformance: { ...prev.techPerformance, [technicianName]: currentTechCount + 1 },
         customerSpend: { ...prev.customerSpend, [userName]: currentCustomerSpend + (ticketPrice || 0) }
       };
