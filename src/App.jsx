@@ -228,13 +228,13 @@ function AdminDashboard({
         <div className="space-y-6">
           <BrandLogo />
           <nav className="flex flex-col gap-1.5 pt-4">
-            <button onClick={() => { setTab('ops'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'ops' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📊 Tráfico Operativo</button>
-            <button onClick={() => { setTab('price'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'price' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📦 Catálogo y Tarifas</button>
-            <button onClick={() => { setTab('users'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'users' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>👥 Abonados ({users.length})</button>
-            <button onClick={() => { setTab('reports'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'reports' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📈 Reportes de Producción</button>
+            <button type="button" onClick={() => { setTab('ops'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'ops' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📊 Tráfico Operativo</button>
+            <button type="button" onClick={() => { setTab('price'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'price' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📦 Catálogo y Tarifas</button>
+            <button type="button" onClick={() => { setTab('users'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'users' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>👥 Abonados ({users.length})</button>
+            <button type="button" onClick={() => { setTab('reports'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'reports' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📈 Reportes de Producción</button>
           </nav>
         </div>
-        <button onClick={() => setView('landing')} className="bg-[#042120] text-center font-bold py-2 rounded-xl text-teal-400 border border-teal-900">
+        <button type="button" onClick={() => setView('landing')} className="bg-[#042120] text-center font-bold py-2 rounded-xl text-teal-400 border border-teal-900">
           🔒 Cerrar Sesión Central
         </button>
       </div>
@@ -276,7 +276,7 @@ function AdminDashboard({
                           type="button" 
                           onClick={() => {
                             onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service, app.price || 45000, app.meters || 15);
-                            alert('✓ Órden archivada con éxito en el historial.');
+                            alert('✓ Órden archivada con éxito en el historial y sumada al panel de analíticas.');
                           }}
                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider"
                         >
@@ -366,7 +366,7 @@ function AdminDashboard({
                       <p className="text-[10px] text-emerald-400 font-bold mt-1 bg-teal-950/40 p-1 rounded inline-block border border-teal-900/40">📞 Fono: {q.phone}</p>
                     </div>
 
-                    {q.status === 'Pending' || q.status === 'Pendiente' ? (
+                    {(q.status === 'Pending' || q.status === 'Pendiente') && (
                       <div className="bg-[#0a3a37] p-2.5 rounded-xl border border-teal-800 space-y-2 mt-2">
                         <p className="text-[9px] font-black text-[#ecc245] uppercase tracking-wider">✏️ Formulario de Ajuste Comercial (Rebote Real):</p>
                         <div className="grid grid-cols-3 gap-1.5">
@@ -395,7 +395,7 @@ function AdminDashboard({
                           ⚡ Lanzar Rebote de Valor Real
                         </button>
                       </div>
-                    ) : null}
+                    )}
 
                     {q.status === 'Aceptado por Cliente' && (
                       <button 
@@ -437,7 +437,7 @@ function AdminDashboard({
                             {staff.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                           {app.technician && app.technician !== 'Sin Asignar' && (
-                            /* CORRECCIÓN ABSOLUTA: Se cambió id por app.id para evitar crasheos y congelamientos de pantalla */
+                            /* SANEADO COMPLETAMENTE EL GATILLO CRÍTICO DE RUTA ACTIVA */
                             <button type="button" onClick={() => onConfirmDispatch(app.id)} className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white text-[10px] font-black py-1.5 rounded-lg uppercase tracking-wider transition-all">
                               🚀 Confirmar y Despachar Ruta
                             </button>
@@ -452,25 +452,25 @@ function AdminDashboard({
           </div>
         )}
 
-        {/* PANTALLA DE REPORTES PERFECTAMENTE DISPONIBLE */}
+        {/* PANTALLA DE REPORTES PERFECTAMENTE CORREGIDA */}
         {tab === 'reports' && (
           <div className="space-y-6 w-full block">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 shadow-xl flex flex-col items-center justify-center text-center">
                 <p className="text-[#ecc245] font-black uppercase text-[10px] tracking-widest mb-1">💰 Facturación Bruta Semanal</p>
-                <p className="text-3xl font-black text-white font-mono">${analytics.totalRevenue.toLocaleString('es-CL')}</p>
+                <p className="text-3xl font-black text-white font-mono">${(analytics?.totalRevenue || 0).toLocaleString('es-CL')}</p>
                 <div className="w-full h-1 bg-teal-900 rounded-full mt-4 overflow-hidden">
                   <div className="h-full bg-[#ecc245]" style={{width: '100%'}}></div>
                 </div>
               </div>
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 shadow-xl flex flex-col items-center justify-center text-center">
                 <p className="text-teal-400 font-black uppercase text-[10px] tracking-widest mb-1">🔧 Trabajos Finalizados</p>
-                <p className="text-3xl font-black text-white font-mono">{analytics.closedTicketsCount}</p>
+                <p className="text-3xl font-black text-white font-mono">{analytics?.closedTicketsCount || 0}</p>
                 <p className="text-[9px] text-teal-600 mt-2 font-bold uppercase">Mesa Operativa Limpia al 100%</p>
               </div>
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 shadow-xl flex flex-col items-center justify-center text-center">
                 <p className="text-emerald-400 font-black uppercase text-[10px] tracking-widest mb-1">📍 Despliegue de Fibra/UTP</p>
-                <p className="text-3xl font-black text-white font-mono">{analytics.totalMeters}m</p>
+                <p className="text-3xl font-black text-white font-mono">{analytics?.totalMeters || 0}m</p>
                 <p className="text-[9px] text-emerald-700 mt-2 font-bold uppercase">Metraje Real Sincronizado</p>
               </div>
             </div>
@@ -480,7 +480,7 @@ function AdminDashboard({
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 space-y-4">
                 <h3 className="font-black text-white uppercase text-xs tracking-wider">👷 Ranking de Eficiencia Técnica</h3>
                 <div className="space-y-3">
-                  {Object.entries(analytics.techPerformance).length === 0 ? (
+                  {!analytics?.techPerformance || Object.entries(analytics.techPerformance).length === 0 ? (
                     <p className="text-teal-700 italic py-4 text-center">Aguardando cierres de órdenes en terreno.</p>
                   ) : (
                     Object.entries(analytics.techPerformance)
@@ -502,7 +502,7 @@ function AdminDashboard({
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 space-y-4">
                 <h3 className="font-black text-white uppercase text-xs tracking-wider">💎 Cartera de Clientes VIP (Inversión Semanal)</h3>
                 <div className="space-y-3">
-                  {Object.entries(analytics.customerSpend).length === 0 ? (
+                  {!analytics?.customerSpend || Object.entries(analytics.customerSpend).length === 0 ? (
                     <p className="text-teal-700 italic py-4 text-center">Sin facturaciones archivadas todavía.</p>
                   ) : (
                     Object.entries(analytics.customerSpend)
@@ -866,7 +866,7 @@ const InteractiveQuoter = ({ catalog, currentUser, quotes, onSendQuote, onClient
           <button type="button" onClick={() => { onSendQuote(currentUser.name, type, getHardwareSummaryString(), total, addr, meters, currentUser?.phone); setStep(4); }} className="w-full bg-[#085a4f] text-white py-3 rounded-xl font-black uppercase tracking-wider">Enviar Propuesta a Central</button>
         </div>
       )}
-      {step === 4 && <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Presupuesto enviado con éxito.</p>}
+      {step === 4 && <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Presupuesto enviado con éxito. La central de mandos evaluará los costos reales.</p>}
     </div>
   );
 };
@@ -964,9 +964,6 @@ const HelpPage = ({ currentUser, onSendAppointment }) => {
   );
 };
 
-// ==========================================
-// 7. ORQUESTADOR CENTRAL GLOBAL
-// ==========================================
 export default function App() {
   const [view, setView] = useState('landing');
   
