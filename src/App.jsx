@@ -56,8 +56,8 @@ function Landing({ setView }) {
         <>
           <div className="bg-[#0a3a37] p-5 rounded-2xl text-left text-xs mb-8 space-y-2.5 border border-teal-800/40 shadow-2xl max-w-xs w-full text-gray-200">
             <p className="text-teal-400 font-bold uppercase text-[9px] tracking-wider border-b border-teal-900 pb-1">Módulos del Sistema:</p>
-            <p className="flex items-start gap-1.5"><span>•</span> Clientes: Cotización inteligente y botón S.O.S.</p>
-            <p className="flex items-start gap-1.5"><span>•</span> Central: Gestión y retorno técnico en tiempo real.</p>
+            <p className="flex items-start gap-1.5"><span>•</span> Clientes: Cotización con rebote real y matriz de turnos viva.</p>
+            <p className="flex items-start gap-1.5"><span>•</span> Central: Carga externa, control de 6 cupos y bloqueos.</p>
             <p className="flex items-start gap-1.5"><span>•</span> Técnicos: Cierre de rutas con reporte directo.</p>
           </div>
           
@@ -171,29 +171,54 @@ function ClientAuth({ users, onRegister, onLoginSuccess }) {
 // ==========================================
 // 4. CONSOLA DE ADMINISTRACIÓN CENTRAL
 // ==========================================
-function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quotes, appointments, users, onAssignTech, onConfirmDispatch, onApproveQuote, onArchiveJob }) {
+function AdminDashboard({ 
+  setView, catalog, onAddProduct, onDeleteProduct, 
+  quotes, onAdjustQuote, appointments, onManualSchedule, 
+  blockedDates, onToggleBlockDate, users, onAssignTech, onConfirmDispatch, onArchiveJob 
+}) {
   const [tab, setTab] = useState('ops');
   const [selectedUserFolder, setSelectedUserFolder] = useState(null);
   
   const [newItemLabel, setNewItemLabel] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemStock, setNewItemStock] = useState('');
+
+  // Estados locales independientes para manejar la edición de rebotes en cada tarjeta
+  const [localPrices, setLocalPrices] = useState({});
+  const [localNotes, setLocalNotes] = useState({});
+
+  const [extName, setExtName] = useState('');
+  const [extService, setExtService] = useState('Mantención Telefónica Externa');
+  const [extAddr, setExtAddr] = useState('');
+  const [extPhone, setExtPhone] = useState('');
+  const [extDate, setExtDate] = useState('');
+
+  const [dateToBlock, setDateToBlock] = useState('');
   
   const staff = ['Sin Asignar', 'Juan Pérez (Móvil 1)', 'Carlos Silva (Móvil 2)', 'Andrés León (Móvil 3)'];
 
-  // Las citas que están pendientes de asignarse o enviarse
-  const activeAppointments = appointments.filter(app => app.status === 'Asignado' || app.status === 'Pendiente Despacho');
-  // Las citas que el técnico ya completó y están esperando la revisión final del admin
+  const activeAppointments = appointments.filter(app => app.status === 'Asignado' || app.status === 'Pendiente Despacho' || app.status === 'En Ruta');
   const reviewAppointments = appointments.filter(app => app.status === 'Revisión Técnico');
 
   const handleCreateProduct = (e) => {
     e.preventDefault();
-    if (!newItemLabel || !newItemPrice || !newItemStock) return alert('Por favor rellene todos los datos para el nuevo producto.');
+    if (!newItemLabel || !newItemPrice || !newItemStock) return alert('Por favor rellene todos los datos.');
     onAddProduct(newItemLabel, parseInt(newItemPrice), parseInt(newItemStock));
-    setNewItemLabel('');
-    setNewItemPrice('');
-    setNewItemStock('');
+    setNewItemLabel(''); setNewItemPrice(''); setNewItemStock('');
     alert('📦 Producto inyectado con éxito en el Maestro de Inventario.');
+  };
+
+  const handleExternalScheduleSubmit = (e) => {
+    e.preventDefault();
+    if (!extName || !extAddr || !extPhone || !extDate) return alert('Complete todos los campos de la cita externa.');
+    
+    const existingCount = appointments.filter(app => app.date === extDate).length;
+    if (existingCount >= 6) return alert('🚫 No se puede agendar. Esta fecha ya alcanzó el tope máximo de 6 visitas.');
+    if (blockedDates.includes(extDate)) return alert('🔒 Esta fecha está bloqueada manualmente por la administración.');
+
+    onManualSchedule(extName, extService, extDate, extAddr, extPhone);
+    setExtName(''); setExtAddr(''); setExtPhone(''); setExtDate('');
+    alert('📅 Cita externa inyectada exitosamente ocupando 1 cupo del día.');
   };
 
   return (
@@ -216,7 +241,7 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
       {/* Panel Principal */}
       <div className="flex-1 p-6 overflow-y-auto space-y-4">
         <h1 className="text-base font-black text-white uppercase tracking-wider">
-          {tab === 'ops' && 'Mesa de Control de Incidentes y Despachos'}
+          {tab === 'ops' && 'Mesa de Control de Incidentes, Despachos y Agendamiento'}
           {tab === 'price' && 'Maestro de Inventario y Carga de Existencias'}
           {tab === 'users' && !selectedUserFolder && 'Fichero General de Abonados'}
           {selectedUserFolder && `Expediente: ${selectedUserFolder.name}`}
@@ -224,7 +249,7 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
 
         {tab === 'ops' && (
           <div className="space-y-6">
-            {/* SECCIÓN DE OBSERVACIONES TÉCNICAS (RETORNO DE TERRENO) */}
+            {/* RETORNO TÉCNICO */}
             {reviewAppointments.length > 0 && (
               <div className="bg-[#0f4d39] p-4 rounded-2xl border-2 border-emerald-500 shadow-2xl space-y-3">
                 <h3 className="font-black text-emerald-300 uppercase flex justify-between items-center text-xs tracking-wider animate-pulse">
@@ -247,13 +272,10 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
                       <div className="flex gap-2 pt-1">
                         <button 
                           type="button" 
-                          onClick={() => {
-                            onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service);
-                            alert('Órden validada. La mesa quedó limpia y la observación se guardó en la bitácora del cliente.');
-                          }}
+                          onClick={() => onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service)}
                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider"
                         >
-                          ✓ Validar, Archivar Historial y Limpiar Mesa
+                          ✓ Validar, Archivar Historial Pipol y Limpiar Mesa
                         </button>
                       </div>
                     </div>
@@ -262,73 +284,169 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
               </div>
             )}
 
-            {/* Fila Inferior: Cotizaciones y Citas Activas */}
+            {/* SECCIÓN INTERMEDIA: AGENDA TELEFÓNICA Y BLOQUEOS */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {/* Cotizaciones Pendientes */}
+              <form onSubmit={handleExternalScheduleSubmit} className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-3">
+                <h3 className="font-bold text-[#ecc245] uppercase text-[11px] tracking-wider">➕ Agendar Cita Manual (Llamados por fuera de la App)</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="text" placeholder="Nombre del Cliente" value={extName} onChange={e => setExtName(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-lg text-white font-bold" />
+                  <input type="tel" placeholder="Teléfono" value={extPhone} onChange={e => setExtPhone(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-lg text-white font-bold" />
+                  <input type="text" placeholder="Dirección del Trabajo" value={extAddr} onChange={e => setExtAddr(e.target.value)} className="col-span-2 p-2 bg-[#042120] border border-teal-900 rounded-lg text-white font-bold" />
+                  <select value={extService} onChange={e => setExtService(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-lg text-white font-bold">
+                    <option value="Instalación Telefónica Externa">Instalación Externa</option>
+                    <option value="Mantención Telefónica Externa">Mantención de Emergencia</option>
+                  </select>
+                  <input type="date" value={extDate} onChange={e => setExtDate(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-lg text-white font-bold" />
+                </div>
+                <button type="submit" className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white font-black py-2 rounded-xl uppercase tracking-wider text-[10px]">
+                  Insertar Cita y Restar Cupo Diario
+                </button>
+              </form>
+
+              <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-3 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-bold text-red-400 uppercase text-[11px] tracking-wider">🔒 Bloqueo Preventivo de Calendario</h3>
+                  <p className="text-[10px] text-teal-400 mt-1">Seleccione un día para cerrarlo por completo. Los clientes no podrán tomar turnos en esa fecha.</p>
+                  <div className="flex gap-2 mt-3">
+                    <input type="date" value={dateToBlock} onChange={e => setDateToBlock(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-lg text-white font-bold flex-1" />
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        if (!dateToBlock) return alert('Seleccione una fecha.');
+                        onToggleBlockDate(dateToBlock); setDateToBlock('');
+                      }} 
+                      className="bg-red-600 hover:bg-red-700 text-white font-black px-4 rounded-lg uppercase text-[10px]"
+                    >
+                      Alternar Bloqueo
+                    </button>
+                  </div>
+                </div>
+                {blockedDates.length > 0 && (
+                  <div className="pt-2 border-t border-teal-900">
+                    <p className="text-[9px] font-black text-gray-400 uppercase">Días Cerrados de Forma Manual:</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {blockedDates.map(d => (
+                        <span key={d} className="bg-red-950 text-red-400 border border-red-900 px-2 py-0.5 rounded font-mono text-[9px] font-bold">{d}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* FILA INFERIOR: COTIZACIONES INTERACTIVAS Y CITAS */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              
+              {/* COMPONENTE DE REBOTE CORREGIDO PARA QUE EL ADMIN PUEDA EDITAR VALORES EN VIVO */}
               <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
                 <h3 className="font-bold text-teal-400 border-b border-teal-900 pb-2 uppercase flex justify-between items-center">
                   <span>📦 Cotizaciones Inteligentes de Clientes</span>
                   <span className="bg-teal-950 text-teal-400 px-2.5 py-0.5 rounded-full font-black text-[10px]">{quotes.length}</span>
                 </h3>
                 {quotes.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin solicitudes pendientes</p> : quotes.map(q => (
-                  <div key={q.id} className="p-3 bg-[#042120] border border-teal-900 rounded-xl flex flex-col space-y-2">
+                  <div key={q.id} className="p-3 bg-[#042120] border border-teal-900 rounded-xl flex flex-col space-y-2 shadow-lg">
                     <div>
-                      <p className="font-bold text-white text-sm">{q.user}</p>
-                      <p className="text-[#ecc245] font-black font-mono text-xs mt-0.5">${q.total.toLocaleString('es-CL')}</p>
-                      <p className="text-slate-400 font-mono text-[10px] mt-1">⚙️ Equipos: {q.cam}</p>
+                      <div className="flex justify-between items-start">
+                        <p className="font-black text-white text-sm">{q.user}</p>
+                        <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase ${q.status === 'Respondido' ? 'bg-amber-950 text-[#ecc245] border border-amber-800' : q.status === 'Aceptado por Cliente' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-teal-950 text-teal-400 border border-teal-900'}`}>
+                          {q.status === 'Respondido' ? 'Enviado a Cliente' : q.status === 'Aceptado por Cliente' ? 'Aceptado por Cliente' : 'Por Estudiar'}
+                        </span>
+                      </div>
+                      <p className="text-gray-400 font-bold mt-1 text-xs">Precio Sugerido IA: <span className="text-teal-400 font-mono font-black">${q.total.toLocaleString('es-CL')}</span></p>
+                      {q.status === 'Respondido' && (
+                        <p className="text-amber-400 font-mono font-bold text-[11px] mt-0.5">➔ Rebote de Valor Real: ${q.adjustedTotal?.toLocaleString('es-CL')}</p>
+                      )}
+                      <p className="text-slate-400 font-mono text-[10px] mt-1.5">⚙️ Solicitud: {q.cam}</p>
                       <p className="text-[10px] text-teal-400 mt-0.5">📍 Ubicación: {q.address}</p>
-                      <p className="text-[10px] text-emerald-400 font-bold mt-1 bg-emerald-950/40 p-1 rounded border border-teal-900">
-                        📞 Teléfono Vinculado: <span className="underline font-mono text-white">{q.phone}</span>
-                      </p>
+                      <p className="text-[10px] text-emerald-400 font-bold mt-1 bg-teal-950/40 p-1 rounded inline-block border border-teal-900/40">📞 Fono: {q.phone}</p>
                     </div>
-                    <button 
-                      type="button" 
-                      onClick={() => onApproveQuote(q)}
-                      className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider mt-1"
-                    >
-                      ✓ Aprobar y Despachar Instalador
-                    </button>
+
+                    {/* FORMULARIO DE REBOTE ACTIVO (Habilitado para edición en el Admin) */}
+                    {q.status === 'Pending' || q.status === 'Pendiente' ? (
+                      <div className="bg-[#0a3a37] p-2.5 rounded-xl border border-teal-800 space-y-2 mt-2">
+                        <p className="text-[9px] font-black text-[#ecc245] uppercase tracking-wider">✏️ Formulario de Ajuste Comercial:</p>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <input 
+                            type="number" 
+                            placeholder="Valor Real ($)" 
+                            value={localPrices[q.id] || ''}
+                            onChange={e => setLocalPrices({...localPrices, [q.id]: e.target.value})}
+                            className="col-span-1 p-2 bg-[#042120] border border-teal-950 rounded-lg text-xs text-[#ecc245] font-mono font-bold focus:outline-none"
+                          />
+                          <input 
+                            type="text" 
+                            placeholder="Nota de ajuste..." 
+                            value={localNotes[q.id] || ''}
+                            onChange={e => setLocalNotes({...localNotes, [q.id]: e.target.value})}
+                            className="col-span-2 p-2 bg-[#042120] border border-teal-950 rounded-lg text-xs text-white focus:outline-none"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const pReal = parseInt(localPrices[q.id]);
+                            const nReal = localNotes[q.id] || 'Presupuesto oficial ajustado por disponibilidad y metraje real.';
+                            if (!pReal) return alert('Por favor, ingrese el Valor Real Ajustado.');
+                            onAdjustQuote(q.id, pReal, nReal);
+                            alert('¡Rebote enviado con éxito! Los nuevos valores se reflejarán en el celular del cliente.');
+                          }}
+                          className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white font-black py-2 rounded-lg text-[9px] uppercase tracking-wider transition-colors"
+                        >
+                          ⚡ Lanzar Rebote de Valor Real
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {/* CONFIRMACIÓN DE CITA (Desbloqueado solo cuando el cliente aceptó el precio ajustado) */}
+                    {q.status === 'Aceptado por Cliente' && (
+                      <button 
+                        type="button" 
+                        onClick={() => { onApproveQuote(q); alert('Cita técnica activada en tránsito.'); }}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2.5 rounded-xl uppercase text-[10px] tracking-wider mt-1"
+                      >
+                        ✓ Confirmar y Crear Cita en Tránsito
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
 
-              {/* Citas y Rutas Activas en Tránsito */}
+              {/* Citas y Rutas Activas */}
               <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
-                <h3 className="font-bold text-red-400 border-b border-teal-900 pb-2 uppercase">📅 Citas Técnicas en Tránsito</h3>
-                {activeAppointments.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin órdenes activas en tránsito.</p> : activeAppointments.map(app => (
-                  <div key={app.id} className="p-3 bg-[#042120] border border-teal-900 rounded-xl space-y-2">
-                    <div className="space-y-0.5">
-                      <p className="font-black text-white">{app.user} - <span className="text-[#ecc245]">"{app.service}"</span></p>
-                      <p className="text-[10px] text-teal-400">📍 Dirección: <span className="text-white font-bold">{app.address}</span></p>
-                      <p className="text-[10px] text-teal-400">📞 Contacto: <span className="text-teal-200 font-mono font-bold">{app.phone}</span></p>
-                      <p className="text-[10px] text-teal-500">👷 Operador Asignado: <span className="text-teal-300 font-bold underline">{app.technician || 'Sin Asignar'}</span></p>
-                    </div>
-                    
-                    <div className="space-y-1.5 pt-1">
-                      <select 
-                        value={app.technician || 'Sin Asignar'} 
-                        onChange={(e) => onAssignTech(app.id, e.target.value)} 
-                        className="w-full p-2 bg-[#0a3a37] border border-teal-800 rounded-lg text-white font-bold focus:outline-none text-[11px]"
-                      >
-                        {staff.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-
-                      {/* EL BOTÓN RESTAURADOR DE CONEXIÓN: Libera y despacha la ruta al técnico de verdad */}
-                      {app.technician && app.technician !== 'Sin Asignar' && (
-                        <button 
-                          type="button" 
-                          onClick={() => {
-                            onConfirmDispatch(app.id);
-                            alert(`🚀 ¡Ruta confirmada! Orden enviada exitosamente a la terminal de campo de ${app.technician}.`);
-                          }}
-                          className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white text-[10px] font-black py-1.5 rounded-lg uppercase tracking-wider transition-all"
-                        >
-                          🚀 Confirmar y Despachar Ruta
-                        </button>
+                <h3 className="font-bold text-red-400 border-b border-teal-900 pb-2 uppercase">📅 Citas Técnicas en Tránsito ({activeAppointments.length})</h3>
+                {activeAppointments.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin órdenes activas en tránsito.</p> : activeAppointments.map(app => {
+                  const dayTotal = appointments.filter(a => a.date === app.date).length;
+                  return (
+                    <div key={app.id} className="p-3 bg-[#042120] border border-teal-900 rounded-xl space-y-2">
+                      <div className="space-y-0.5">
+                        <div className="flex justify-between items-center">
+                          <p className="font-black text-white">{app.user} - <span className="text-[#ecc245]">"{app.service}"</span></p>
+                          <span className="bg-teal-950 text-teal-400 px-2 py-0.5 rounded font-mono text-[9px]">📅 {app.date} ({dayTotal}/6 Cupos)</span>
+                        </div>
+                        <p className="text-[10px] text-teal-400">📍 Dirección: <span className="text-white font-bold">{app.address}</span></p>
+                        <p className="text-[10px] text-teal-400">📞 Contacto: <span className="text-teal-200 font-mono font-bold">{app.phone}</span></p>
+                        <p className="text-[10px] text-teal-500">👷 Operador Asignado: <span className={`font-bold underline ${app.status === 'En Ruta' ? 'text-emerald-400' : 'text-teal-300'}`}>{app.technician || 'Sin Asignar'} ({app.status})</span></p>
+                      </div>
+                      
+                      {app.status !== 'En Ruta' && (
+                        <div className="space-y-1.5 pt-1">
+                          <select 
+                            value={app.technician || 'Sin Asignar'} 
+                            onChange={(e) => onAssignTech(app.id, e.target.value)} 
+                            className="w-full p-2 bg-[#0a3a37] border border-teal-800 rounded-lg text-white font-bold focus:outline-none text-[11px]"
+                          >
+                            {staff.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                          {app.technician && app.technician !== 'Sin Asignar' && (
+                            <button type="button" onClick={() => onConfirmDispatch(app.id)} className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white text-[10px] font-black py-1.5 rounded-lg uppercase tracking-wider transition-all">
+                              🚀 Confirmar y Despachar Ruta
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -336,47 +454,25 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
 
         {tab === 'price' && (
           <div className="space-y-4">
-            {/* FORMULARIO SUPERIOR RESTAURADO PARA CARGAR NUEVA MERCADERÍA */}
             <form onSubmit={handleCreateProduct} className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-3">
               <h3 className="font-bold text-[#ecc245] uppercase text-[11px] tracking-wider">📥 Inyectar Nuevo Producto al Catálogo</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] uppercase font-bold text-gray-300">Nombre del Equipo</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: Cámara Bullet 5MP AI" 
-                    value={newItemLabel} 
-                    onChange={e => setNewItemLabel(e.target.value)}
-                    className="p-2 bg-[#042120] border border-teal-900 rounded-xl text-white font-bold text-xs"
-                  />
+                  <input type="text" placeholder="Ej: Cámara Bullet 5MP AI" value={newItemLabel} onChange={e => setNewItemLabel(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-xl text-white font-bold text-xs" />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] uppercase font-bold text-gray-300">Precio CLP ($)</label>
-                  <input 
-                    type="number" 
-                    placeholder="Ej: 55000" 
-                    value={newItemPrice} 
-                    onChange={e => setNewItemPrice(e.target.value)}
-                    className="p-2 bg-[#042120] border border-teal-900 rounded-xl text-[#ecc245] font-mono font-bold text-xs"
-                  />
+                  <input type="number" placeholder="Ej: 55000" value={newItemPrice} onChange={e => setNewItemPrice(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-xl text-[#ecc245] font-mono font-bold text-xs" />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] uppercase font-bold text-gray-300">Stock Físico Inicial</label>
-                  <input 
-                    type="number" 
-                    placeholder="Ej: 25" 
-                    value={newItemStock} 
-                    onChange={e => setNewItemStock(e.target.value)}
-                    className="p-2 bg-[#042120] border border-teal-900 rounded-xl text-white text-center font-bold text-xs"
-                  />
+                  <input type="number" placeholder="Ej: 25" value={newItemStock} onChange={e => setNewItemStock(e.target.value)} className="p-2 bg-[#042120] border border-teal-900 rounded-xl text-white text-center font-bold text-xs" />
                 </div>
               </div>
-              <button type="submit" className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white text-[10px] font-black py-2 rounded-xl uppercase tracking-wider">
-                + Cargar Producto al Maestro e Inyectar a Clientes
-              </button>
+              <button type="submit" className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white text-[10px] font-black py-2 rounded-xl uppercase tracking-wider">+ Cargar Producto al Maestro e Inyectar a Clientes</button>
             </form>
 
-            {/* TABLA DE PRODUCTOS CON BOTÓN DE ELIMINACIÓN INDIVIDUAL */}
             <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-3">
               <h3 className="font-bold text-white uppercase text-[11px]">📦 Inventario Físico Actual y Modificación de Valores</h3>
               <div className="space-y-2">
@@ -385,25 +481,14 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
                     <span className="col-span-5 text-teal-200">{item.label}</span>
                     <div className="col-span-3 flex items-center gap-1">
                       <span className="text-teal-600 font-mono">$</span>
-                      <input type="number" value={item.price} onChange={(e) => {}} disabled className="w-full p-1 bg-[#0a3a37]/50 border border-teal-900 rounded text-right text-[#ecc245] opacity-80" />
+                      <input type="number" value={item.price} onChange={() => {}} disabled className="w-full p-1 bg-[#0a3a37]/50 border border-teal-900 rounded text-right text-[#ecc245] opacity-80" />
                     </div>
                     <div className="col-span-3 flex items-center gap-1">
                       <span className="text-teal-600 text-[9px]">Cant.</span>
-                      <input type="number" value={item.stock} onChange={(e) => {}} disabled className="w-full p-1 bg-[#0a3a37]/50 border border-teal-900 rounded text-center text-white opacity-80" />
+                      <input type="number" value={item.stock} onChange={() => {}} disabled className="w-full p-1 bg-[#0a3a37]/50 border border-teal-900 rounded text-center text-white opacity-80" />
                     </div>
                     <div className="col-span-1 text-center">
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          if(confirm(`¿Está seguro de eliminar ${item.label}? Esto provocará un quiebre definitivo de stock y se quitará del catálogo de los clientes.`)) {
-                            onDeleteProduct(item.id);
-                          }
-                        }}
-                        className="text-red-400 hover:text-red-500 text-sm font-sans"
-                        title="Eliminar producto"
-                      >
-                        🗑️
-                      </button>
+                      <button type="button" onClick={() => { if(confirm(`¿Desea eliminar ${item.label}?`)) onDeleteProduct(item.id); }} className="text-red-400 hover:text-red-500 text-sm font-sans">🗑️</button>
                     </div>
                   </div>
                 ))}
@@ -458,13 +543,12 @@ function AdminDashboard({ setView, catalog, onAddProduct, onDeleteProduct, quote
 }
 
 // ==========================================
-// 5. TERMINAL DEL TÉCNICO (MUESTRA RUTAS EN RUTA)
+// 5. TERMINAL DEL TÉCNICO
 // ==========================================
 function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
   const [techFilter, setTechFilter] = useState('Carlos Silva (Móvil 2)'); 
   const [observations, setObservations] = useState({}); 
 
-  // CORRECCIÓN CLAVE: El instalador ahora solo ve las órdenes que han sido despachadas por el admin con estado 'En Ruta'
   const jobsFiltered = techJobs.filter(j => j.technician === techFilter && j.status === 'En Ruta');
 
   return (
@@ -584,12 +668,14 @@ const ClientHome = ({ currentUser, appointments }) => {
   );
 };
 
-const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
+const InteractiveQuoter = ({ catalog, currentUser, quotes, onSendQuote, onClientAcceptFinalPrice }) => {
   const [step, setStep] = useState(1); 
   const [type, setType] = useState(''); 
   const [addr, setAddr] = useState(currentUser?.address || '');
   const [meters, setMeters] = useState(15); 
   const [quantities, setQuantities] = useState({});
+
+  const myQuotes = quotes.filter(q => q.user === currentUser?.name);
 
   const handleUpdateQty = (id, delta) => {
     setQuantities(prev => {
@@ -599,12 +685,10 @@ const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
   };
 
   const base = type === 'Empresa' ? 120000 : 65000;
-  
   const totalHardware = catalog.reduce((acc, item) => {
     const qty = quantities[item.id] || 0;
     return acc + (qty * item.price);
   }, 0);
-  
   const total = base + totalHardware + (meters * 3500);
 
   const getHardwareSummaryString = () => {
@@ -616,6 +700,48 @@ const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
 
   return (
     <div className="p-5 space-y-4 text-xs font-sans">
+      {/* VISTA DE REBOTE EN EL CELULAR DEL CLIENTE */}
+      {myQuotes.length > 0 && (
+        <div className="space-y-2">
+          <p className="font-black text-[#ecc245] uppercase text-[9px] tracking-wider">🔄 Canal de Rebotes y Ofertas Oficiales:</p>
+          {myQuotes.map(mq => (
+            <div key={mq.id} className="p-3 bg-[#0a3a37] rounded-xl border border-teal-800 space-y-2 shadow-md">
+              <div className="flex justify-between items-center border-b border-teal-900 pb-1">
+                <span className="font-bold text-white text-[10px]">{mq.cam}</span>
+                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase ${mq.status === 'Respondido' ? 'bg-amber-950 text-[#ecc245] border border-amber-800' : mq.status === 'Aceptado por Cliente' ? 'bg-emerald-950 text-emerald-400' : 'bg-teal-950 text-teal-400'}`}>
+                  {mq.status === 'Respondido' ? 'Rebote de Valor' : mq.status === 'Aceptado por Cliente' ? 'Aceptado' : 'Estudiando...'}
+                </span>
+              </div>
+              <p className="text-gray-400 text-[10px]">Cubicación Inicial Est.: <span className="font-mono font-bold">${mq.total.toLocaleString('es-CL')}</span></p>
+              
+              {mq.status === 'Respondido' && (
+                <div className="mt-2 bg-[#042120] p-2.5 rounded-lg border border-amber-900/40 space-y-2">
+                  <div>
+                    <p className="text-[8px] font-black text-[#ecc245] uppercase tracking-wide">💼 Presupuesto Real Ajustado por Administración:</p>
+                    <p className="text-base font-black text-emerald-400 font-mono mt-0.5">${mq.adjustedTotal?.toLocaleString('es-CL')}</p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-black text-teal-400 uppercase tracking-wide">📝 Nota Técnica del Administrador:</p>
+                    <p className="text-gray-200 italic text-[11px] mt-0.5">"{mq.adminNote}"</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClientAcceptFinalPrice(mq.id);
+                      alert('🤝 ¡Presupuesto aceptado! La central de CISVEN ya fue notificada para asignar el camión técnico.');
+                    }}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 rounded-lg uppercase tracking-wider text-[10px] mt-1 shadow-lg transition-all"
+                  >
+                    🤝 Aceptar Presupuesto Final Real
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+          <div className="border-t border-teal-900 my-4"></div>
+        </div>
+      )}
+
       <h3 className="text-sm font-black text-center text-white uppercase tracking-wider">Cubicador Digital AI</h3>
       {step === 1 && (
         <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-4">
@@ -670,16 +796,7 @@ const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
             <p><strong>📍 Ubicación de Obra:</strong> {addr}</p>
             <p><strong>📞 Teléfono Contacto:</strong> {currentUser?.phone || '+56976543210'}</p>
           </div>
-          <button 
-            type="button" 
-            onClick={() => { 
-              onSendQuote(currentUser.name, type, getHardwareSummaryString(), total, addr, meters, currentUser?.phone); 
-              setStep(4); 
-            }} 
-            className="w-full bg-[#085a4f] text-white py-3 rounded-xl font-black uppercase tracking-wider"
-          >
-            Enviar Propuesta a Central
-          </button>
+          <button type="button" onClick={() => { onSendQuote(currentUser.name, type, getHardwareSummaryString(), total, addr, meters, currentUser?.phone); setStep(4); }} className="w-full bg-[#085a4f] text-white py-3 rounded-xl font-black uppercase tracking-wider">Enviar Propuesta a Central</button>
         </div>
       )}
       {step === 4 && <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Presupuesto enviado con éxito. La central validará las existencias.</p>}
@@ -687,21 +804,100 @@ const InteractiveQuoter = ({ catalog, currentUser, onSendQuote }) => {
   );
 };
 
-const AppointmentPage = ({ currentUser, onSendAppointment }) => {
-  const [srv, setSrv] = useState(''); const [dt, setDt] = useState(''); const [done, setDone] = useState(false);
+// ==========================================
+// COMPONENTE NUEVO: NUEVA MATRIZ VIVA DE SELECCIÓN DE CUPOS
+// ==========================================
+const AppointmentPage = ({ currentUser, appointments, blockedDates, onSendAppointment }) => {
+  const [srv, setSrv] = useState(''); 
+  const [selectedDate, setSelectedDate] = useState('');
+  const [done, setDone] = useState(false);
+
+  // Generar dinámicamente los próximos 6 días hábiles a partir de hoy para armar la grilla visual
+  const getNextDays = () => {
+    const days = [];
+    const baseDate = new Date();
+    for (let i = 1; i <= 6; i++) {
+      const next = new Date(baseDate);
+      next.setDate(baseDate.getDate() + i);
+      const str = next.toISOString().split('T')[0];
+      
+      const dayLabel = next.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
+      days.push({ dateStr: str, label: dayLabel });
+    }
+    return days;
+  };
+
+  const availableDays = getNextDays();
+
+  const handleClientScheduleSubmit = (e) => {
+    e.preventDefault();
+    if (!srv) return alert('Por favor, seleccione el requerimiento técnico.');
+    if (!selectedDate) return alert('Por favor, seleccione un día de la matriz de cupos de abajo.');
+
+    const countForDay = appointments.filter(a => a.date === selectedDate).length;
+    if (countForDay >= 6) return alert('🚫 Esta fecha ya alcanzó el tope máximo de 6 visitas.');
+    if (blockedDates.includes(selectedDate)) return alert('🔒 Esta fecha está cerrada por la central.');
+
+    onSendAppointment(currentUser.name, srv, selectedDate);
+    setDone(true);
+  };
+
   return (
-    <div className="p-5 space-y-4 text-xs">
-      <h3 className="text-xs font-bold text-teal-400 text-center uppercase tracking-wider">Agendamiento Técnico</h3>
-      {done ? <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Solicitud de agenda enviada a la mesa técnica.</p> : (
-        <>
-          <select onChange={e => setSrv(e.target.value)} className="w-full p-3 bg-[#042120] border border-teal-900 rounded-xl text-teal-100 font-bold focus:outline-none">
-            <option value="">-- Requerimiento Técnico --</option>
-            <option value="Mantención de Enlaces">Mantención de Enlaces</option>
-            <option value="Ampliación de Cobertura Domo">Ampliación de Cobertura Domo</option>
-          </select>
-          <input type="date" onChange={e => setDt(e.target.value)} className="w-full p-3 bg-[#042120] border border-teal-900 rounded-xl text-white font-bold" />
-          <button type="button" onClick={() => { onSendAppointment(currentUser.name, srv, dt); setDone(true); }} disabled={!srv || !dt} className="w-full bg-[#085a4f] text-white py-3 rounded-xl font-black uppercase tracking-wider">Agendar Visita</button>
-        </>
+    <div className="p-5 space-y-4 text-xs font-sans">
+      <h3 className="text-xs font-black text-teal-400 text-center uppercase tracking-wider">Matriz de Cupos Técnicos en Tiempo Real</h3>
+      {done ? (
+        <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Solicitud de agenda inyectada con éxito.</p>
+      ) : (
+        <form onSubmit={handleClientScheduleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wide">1. Seleccione Tipo de Requerimiento</label>
+            <select value={srv} onChange={e => setSrv(e.target.value)} className="w-full p-3 bg-[#042120] border border-teal-900 rounded-xl text-teal-100 font-bold focus:outline-none" required>
+              <option value="">-- Seleccionar --</option>
+              <option value="Mantención de Enlaces">Mantención de Enlaces</option>
+              <option value="Ampliación de Cobertura Domo">Ampliación de Cobertura Domo</option>
+            </select>
+          </div>
+
+          {/* DISEÑO MEJORADO: GRILLA DE CUPOS VIVA */}
+          <div className="space-y-2">
+            <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wide">2. Matriz de Disponibilidad Diaria (Máx. 6/Día)</label>
+            <div className="grid grid-cols-2 gap-2">
+              {availableDays.map(d => {
+                const count = appointments.filter(a => a.date === d.dateStr).length;
+                const isBlocked = blockedDates.includes(d.dateStr);
+                const isFull = count >= 6;
+
+                let cardStyle = "border-teal-900 bg-[#042120] text-gray-300";
+                let badge = `🟢 ${count}/6 Cupos`;
+
+                if (isBlocked) {
+                  cardStyle = "border-red-950 bg-red-950/20 text-red-400 opacity-60 cursor-not-allowed";
+                  badge = "🔒 Cerrado";
+                } else if (isFull) {
+                  cardStyle = "border-red-900 bg-red-900/10 text-red-500 opacity-60 cursor-not-allowed";
+                  badge = "🚫 Completo";
+                } else if (selectedDate === d.dateStr) {
+                  cardStyle = "border-[#ecc245] bg-[#ecc245]/10 text-[#ecc245] shadow-lg scale-[1.02]";
+                }
+
+                return (
+                  <div 
+                    key={d.dateStr}
+                    onClick={() => { if (!isBlocked && !isFull) setSelectedDate(d.dateStr); }}
+                    className={`p-3 rounded-xl border text-center font-bold cursor-pointer transition-all flex flex-col justify-between h-16 ${cardStyle}`}
+                  >
+                    <span className="capitalize text-[11px] font-black">{d.label}</span>
+                    <span className="text-[9px] font-mono mt-1 font-black block">{badge}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <button type="submit" className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white py-3 rounded-xl font-black uppercase tracking-wider shadow-md mt-2">
+            Confirmar Reserva de Cupo Técnico
+          </button>
+        </form>
       )}
     </div>
   );
@@ -716,7 +912,7 @@ const HelpPage = ({ currentUser, onSendAppointment }) => {
       {sent ? <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl text-red-300 font-bold">▲ Alerta inyectada de urgencia. Cuadrilla notificada.</div> : (
         <>
           <p className="text-teal-400">¿Corte perimetral o intrusión inminente? Presione para congelar la central de despacho e inyectar auxilio inmediato.</p>
-          <button type="button" onClick={() => { onSendAppointment(currentUser.name, "EMERGENCIA CRÍTICA: Despacho Inmediato", "Urgente"); setSent(true); }} className="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-xl font-black uppercase tracking-widest">Enviar Auxilio S.O.S</button>
+          <button type="button" onClick={() => { onSendAppointment(currentUser.name, "EMERGENCIA CRÍTICA: Despacho Inmediato", new Date().toISOString().split('T')[0]); setSent(true); }} className="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-xl font-black uppercase tracking-widest">Enviar Auxilio S.O.S</button>
         </>
       )}
     </div>
@@ -748,11 +944,13 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [quotes, setQuotes] = useState(() => JSON.parse(localStorage.getItem('cisven_quotes')) || []);
   const [appointments, setAppointments] = useState(() => JSON.parse(localStorage.getItem('cisven_appointments')) || []);
+  const [blockedDates, setBlockedDates] = useState(() => JSON.parse(localStorage.getItem('cisven_blocked_dates')) || []);
 
   useEffect(() => { localStorage.setItem('cisven_catalog', JSON.stringify(cameraCatalog)); }, [cameraCatalog]);
   useEffect(() => { localStorage.setItem('cisven_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('cisven_quotes', JSON.stringify(quotes)); }, [quotes]);
   useEffect(() => { localStorage.setItem('cisven_appointments', JSON.stringify(appointments)); }, [appointments]);
+  useEffect(() => { localStorage.setItem('cisven_blocked_dates', JSON.stringify(blockedDates)); }, [blockedDates]);
 
   const handleAddProduct = (label, price, stock) => {
     const newProd = { id: Date.now(), label, price, stock };
@@ -765,23 +963,46 @@ export default function App() {
 
   const handleSendQuote = (user, type, cam, total, address, mtrs, clientPhone) => {
     const phoneToInject = clientPhone || users.find(u => u.name === user)?.phone || '+56976543210';
-    setQuotes([{ id: Date.now(), user, type, cam, total, address, meters: mtrs, phone: phoneToInject, status: 'Pendiente' }, ...quotes]);
+    const tomorrowStr = new Date();
+    tomorrowStr.setDate(tomorrowStr.getDate() + 1);
+    const dateStr = tomorrowStr.toISOString().split('T')[0];
+    
+    setQuotes([{ id: Date.now(), user, type, cam, total, address, meters: mtrs, phone: phoneToInject, status: 'Pendiente', date: dateStr }, ...quotes]);
+  };
+
+  const handleAdjustQuote = (id, price, note) => {
+    setQuotes(quotes.map(q => q.id === id ? { ...q, status: 'Respondido', adjustedTotal: price, adminNote: note } : q));
+  };
+
+  const handleClientAcceptFinalPrice = (id) => {
+    setQuotes(quotes.map(q => q.id === id ? { ...q, status: 'Aceptado por Cliente' } : q));
   };
   
   const handleSendAppointment = (userName, service, date) => {
     const targetUser = users.find(u => u.name === userName);
     const newJob = { 
-      id: Date.now(), 
-      user: userName, 
-      service, 
-      date, 
+      id: Date.now(), user: userName, service, date, 
       address: targetUser?.address || 'Dirección Base', 
       phone: targetUser?.phone || '+56976543210',
-      technician: 'Sin Asignar',
-      status: 'Pendiente Despacho', // Cambia a estado de espera de confirmación
-      techObservation: ''
+      technician: 'Sin Asignar', status: 'Pendiente Despacho', techObservation: ''
     };
     setAppointments([newJob, ...appointments]); 
+  };
+
+  const handleManualSchedule = (name, service, date, address, phone) => {
+    const extJob = {
+      id: Date.now(), user: name, service, date, address, phone,
+      technician: 'Sin Asignar', status: 'Pendiente Despacho', techObservation: ''
+    };
+    setAppointments([extJob, ...appointments]);
+  };
+
+  const handleToggleBlockDate = (dateString) => {
+    if (blockedDates.includes(dateString)) {
+      setBlockedDates(blockedDates.filter(d => d !== dateString));
+    } else {
+      setBlockedDates([...blockedDates, dateString]);
+    }
   };
 
   const handleApproveQuote = (quoteObject) => {
@@ -789,12 +1010,10 @@ export default function App() {
       id: Date.now(),
       user: quoteObject.user,
       service: `Instalación: (${quoteObject.cam})`,
-      date: 'Por Coordinar',
+      date: quoteObject.date,
       address: quoteObject.address,
       phone: quoteObject.phone || '+56976543210', 
-      technician: 'Sin Asignar',
-      status: 'Pendiente Despacho', // Cambia a estado de espera de confirmación
-      techObservation: ''
+      technician: 'Sin Asignar', status: 'Pendiente Despacho', techObservation: ''
     };
     setAppointments([approvedJob, ...appointments]);
     setQuotes(quotes.filter(q => q.id !== quoteObject.id));
@@ -804,11 +1023,8 @@ export default function App() {
     setAppointments(prev => prev.map(item => item.id === id ? { ...item, technician: technicianName } : item));
   };
 
-  // ENLAZADOR DE FLUJO: El admin presiona el botón, se confirma el camión y pasa a 'En Ruta' para habilitar al técnico
   const handleConfirmDispatch = (id) => {
-    setAppointments(prev => prev.map(item => 
-      item.id === id ? { ...item, status: 'En Ruta' } : item
-    ));
+    setAppointments(prev => prev.map(item => item.id === id ? { ...item, status: 'En Ruta' } : item));
   };
 
   const handleTechSubmitToAdmin = (id, techObservationText) => {
@@ -838,26 +1054,18 @@ export default function App() {
       
       {view === 'admin-ops' && (
         <AdminDashboard 
-          setView={setView} 
-          catalog={cameraCatalog} 
-          onAddProduct={handleAddProduct}
-          onDeleteProduct={handleDeleteProduct}
-          quotes={quotes} 
-          appointments={appointments} 
-          users={users} 
-          onAssignTech={handleAssignTech} 
-          onConfirmDispatch={handleConfirmDispatch} // Inyección de la función puente
-          onApproveQuote={handleApproveQuote}
-          onArchiveJob={handleAdminArchiveJob}
+          setView={setView} catalog={cameraCatalog} 
+          onAddProduct={handleAddProduct} onDeleteProduct={handleDeleteProduct}
+          quotes={quotes} onAdjustQuote={handleAdjustQuote}
+          appointments={appointments} onManualSchedule={handleManualSchedule}
+          blockedDates={blockedDates} onToggleBlockDate={handleToggleBlockDate}
+          users={users} onAssignTech={handleAssignTech} onConfirmDispatch={handleConfirmDispatch}
+          onApproveQuote={handleApproveQuote} onArchiveJob={handleAdminArchiveJob}
         />
       )}
       
       {view === 'tecnico-app' && (
-        <TechnicianApp 
-          setView={setView} 
-          techJobs={appointments} 
-          onSubmitToAdmin={handleTechSubmitToAdmin} 
-        />
+        <TechnicianApp setView={setView} techJobs={appointments} onSubmitToAdmin={handleTechSubmitToAdmin} />
       )}
       
       {view.startsWith('app-') && (
@@ -866,8 +1074,8 @@ export default function App() {
         ) : (
           <ClientLayout setView={setView} onLogout={() => { setCurrentUser(null); setView('landing'); }}>
             {view === 'app-dashboard' && <ClientHome currentUser={currentUser} appointments={appointments} />}
-            {view === 'app-getquote' && <InteractiveQuoter catalog={cameraCatalog} currentUser={currentUser} onSendQuote={handleSendQuote} />}
-            {view === 'app-schedule' && <AppointmentPage currentUser={currentUser} onSendAppointment={handleSendAppointment} />}
+            {view === 'app-getquote' && <InteractiveQuoter catalog={cameraCatalog} currentUser={currentUser} quotes={quotes} onSendQuote={handleSendQuote} onClientAcceptFinalPrice={handleClientAcceptFinalPrice} />}
+            {view === 'app-schedule' && <AppointmentPage currentUser={currentUser} appointments={appointments} blockedDates={blockedDates} onSendAppointment={handleSendAppointment} />}
             {view === 'app-sos' && <HelpPage currentUser={currentUser} onSendAppointment={handleSendAppointment} />}
           </ClientLayout>
         )
