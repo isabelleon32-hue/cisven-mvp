@@ -271,7 +271,10 @@ function AdminDashboard({
                       <div className="flex gap-2 pt-1">
                         <button 
                           type="button" 
-                          onClick={() => onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service)}
+                          onClick={() => {
+                            onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service, app.price || 0);
+                            alert('✓ Órden archivada con éxito en la bitácora histórica y sumada al registro de producción semanal.');
+                          }}
                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider"
                         >
                           ✓ Validar, Archivar Historial y Limpiar Mesa
@@ -395,13 +398,17 @@ function AdminDashboard({
                       </div>
                     )}
 
+                    {/* CORRECCIÓN SÓLIDA DEL BOTÓN DE PASO A TRÁNSITO */}
                     {q.status === 'Aceptado por Cliente' && (
                       <button 
                         type="button" 
-                        onClick={() => { onApproveQuote(q); alert('Cita técnica activada en tránsito.'); }}
+                        onClick={() => { 
+                          onApproveQuote(q); 
+                          alert('✓ Presupuesto confirmado. El ticket saltó de inmediato a la sección de Citas Técnicas en Tránsito.'); 
+                        }}
                         className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2.5 rounded-xl uppercase text-[10px] tracking-wider mt-1"
                       >
-                        ✓ Confirmar y Crear Cita en Tránsito
+                        ✓ CONFIRMAR Y CREAR CITA EN TRÁNSITO
                       </button>
                     )}
                   </div>
@@ -578,7 +585,7 @@ function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
                   <p className="font-bold text-white mt-0.5">{job.address}</p>
                 </div>
                 <div className="border-t border-teal-900/60 pt-1.5">
-                  <p className="text-[8px] font-black text-[#ecc245] uppercase tracking-wide">📞 Teléfono de Contacto Directo:</p>
+                  <p className="text-[8px] font-black text-[#ecc245] uppercase">📞 Teléfono de Contacto Directo:</p>
                   <p className="font-black text-emerald-400 text-sm font-mono mt-0.5 bg-teal-950/80 px-2 py-1 rounded inline-block border border-teal-900/60">
                     {job.phone}
                   </p>
@@ -796,13 +803,13 @@ const InteractiveQuoter = ({ catalog, currentUser, quotes, onSendQuote, onClient
           <button type="button" onClick={() => { onSendQuote(currentUser.name, type, getHardwareSummaryString(), total, addr, meters, currentUser?.phone); setStep(4); }} className="w-full bg-[#085a4f] text-white py-3 rounded-xl font-black uppercase tracking-wider">Enviar Propuesta a Central</button>
         </div>
       )}
-      {step === 4 && <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Presupuesto enviado con éxito. La central validará las existencias.</p>}
+      {step === 4 && <p className="text-center text-emerald-400 font-bold bg-emerald-950/20 p-4 rounded-xl border border-dashed border-emerald-800/30">✓ Presupuesto enviado con éxito. La central de mandos evaluará los costos reales.</p>}
     </div>
   );
 };
 
 // ==========================================
-// MATRIZ VIVA DE SELECCIÓN DE CUPOS (GRILLA REFORMADA CON MÁS TAREAS)
+// MATRIZ VIVA DE SELECCIÓN DE CUPOS (GRILLA)
 // ==========================================
 const AppointmentPage = ({ currentUser, appointments, blockedDates, onSendAppointment }) => {
   const [srv, setSrv] = useState(''); 
@@ -847,7 +854,6 @@ const AppointmentPage = ({ currentUser, appointments, blockedDates, onSendAppoin
         <form onSubmit={handleClientScheduleSubmit} className="space-y-4">
           <div className="space-y-1">
             <label className="text-[9px] font-bold uppercase text-gray-400 tracking-wide">1. Seleccione Tipo de Requerimiento Técnico</label>
-            {/* LISTADO DE TAREAS EXPANDIDO Y ESCALABLE SOLICITADO */}
             <select value={srv} onChange={e => setSrv(e.target.value)} className="w-full p-3 bg-[#042120] border border-teal-900 rounded-xl text-teal-100 font-bold focus:outline-none" required>
               <option value="">-- Seleccionar Requerimiento --</option>
               <option value="Instalación de Sistema Nuevo">Instalación de Sistema Nuevo</option>
@@ -944,12 +950,16 @@ export default function App() {
   const [quotes, setQuotes] = useState(() => JSON.parse(localStorage.getItem('cisven_quotes')) || []);
   const [appointments, setAppointments] = useState(() => JSON.parse(localStorage.getItem('cisven_appointments')) || []);
   const [blockedDates, setBlockedDates] = useState(() => JSON.parse(localStorage.getItem('cisven_blocked_dates')) || []);
+  
+  // ESTRUCTURA DE AUDITORÍA SEMANAL PREPARADA (ESTADÍSTICAS FUTURAS)
+  const [weeklyAnalytics, setWeeklyAnalytics] = useState(() => JSON.parse(localStorage.getItem('cisven_analytics')) || { totalRevenue: 0, closedTicketsCount: 0, techPerformance: {} });
 
   useEffect(() => { localStorage.setItem('cisven_catalog', JSON.stringify(cameraCatalog)); }, [cameraCatalog]);
   useEffect(() => { localStorage.setItem('cisven_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('cisven_quotes', JSON.stringify(quotes)); }, [quotes]);
   useEffect(() => { localStorage.setItem('cisven_appointments', JSON.stringify(appointments)); }, [appointments]);
   useEffect(() => { localStorage.setItem('cisven_blocked_dates', JSON.stringify(blockedDates)); }, [blockedDates]);
+  useEffect(() => { localStorage.setItem('cisven_analytics', JSON.stringify(weeklyAnalytics)); }, [weeklyAnalytics]);
 
   const handleAddProduct = (label, price, stock) => {
     const newProd = { id: Date.now(), label, price, stock };
@@ -983,7 +993,7 @@ export default function App() {
       id: Date.now(), user: userName, service, date, 
       address: targetUser?.address || 'Dirección Base', 
       phone: targetUser?.phone || '+56976543210',
-      technician: 'Sin Asignar', status: 'Pendiente Despacho', techObservation: ''
+      technician: 'Sin Asignar', status: 'Pendiente Despacho', techObservation: '', price: 45000
     };
     setAppointments([newJob, ...appointments]); 
   };
@@ -991,7 +1001,7 @@ export default function App() {
   const handleManualSchedule = (name, service, date, address, phone) => {
     const extJob = {
       id: Date.now(), user: name, service, date, address, phone,
-      technician: 'Sin Asignar', status: 'Pendiente Despacho', techObservation: ''
+      technician: 'Sin Asignar', status: 'Pendiente Despacho', techObservation: '', price: 45000
     };
     setAppointments([extJob, ...appointments]);
   };
@@ -1004,15 +1014,19 @@ export default function App() {
     }
   };
 
+  // CORRECCIÓN CLAVE EN EL MOTOR DE ASIGNACIÓN DE TRÁNSITO
   const handleApproveQuote = (quoteObject) => {
     const approvedJob = {
       id: Date.now(),
       user: quoteObject.user,
-      service: quoteObject.service.includes('Instalación') ? quoteObject.service : `Instalación: (${quoteObject.cam})`,
+      service: quoteObject.cam.length > 30 ? quoteObject.cam.substring(0, 27) + '...' : quoteObject.cam,
       date: quoteObject.date,
       address: quoteObject.address,
       phone: quoteObject.phone || '+56976543210', 
-      technician: 'Sin Asignar', status: 'Pendiente Despacho', techObservation: ''
+      technician: 'Sin Asignar', 
+      status: 'Asignado', // Entra directo como asignado para que no falle el gatillo
+      techObservation: '',
+      price: quoteObject.adjustedTotal || quoteObject.total
     };
     setAppointments([approvedJob, ...appointments]);
     setQuotes(quotes.filter(q => q.id !== quoteObject.id));
@@ -1032,8 +1046,11 @@ export default function App() {
     ));
   };
   
-  const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName) => {
+  // EL ADMIN VALIDA, LIKIDA LA MESA Y COMPUTA LAS MÉTRICAS DE PRODUCCIÓN COMPORTAMIENTO
+  const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName, ticketPrice) => {
     setAppointments(appointments.filter(j => j.id !== id));
+    
+    // 1. Inyectar en Fichero Histórico del Abonado
     setUsers(prev => prev.map(u => 
       u.name === userName 
         ? { 
@@ -1045,6 +1062,19 @@ export default function App() {
           } 
         : u
     ));
+
+    // 2. Acumular en Base de Datos de Métricas de Rendimiento Semanal (Preparado para la Fase 2 de Gráficos)
+    setWeeklyAnalytics(prev => {
+      const currentTechCount = prev.techPerformance[technicianName] || 0;
+      return {
+        totalRevenue: prev.totalRevenue + (ticketPrice || 45000),
+        closedTicketsCount: prev.closedTicketsCount + 1,
+        techPerformance: {
+          ...prev.techPerformance,
+          [technicianName]: currentTechCount + 1
+        }
+      };
+    });
   };
 
   return (
