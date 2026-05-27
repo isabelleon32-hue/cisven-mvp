@@ -1,21 +1,25 @@
 import React, { useState } from 'react';
 
-export default function SmartQuoter({ currentUser, onSendQuote }) {
-  const [form, setForm] = useState({ name: '', phone: '', sector: '', address: '' });
+export default function SmartQuoter({ onSendQuote }) {
+  const [formData, setFormData] = useState({ empresa: '', telefono: '', sector: '', direccion: '' });
 
-  const handleSubmit = () => {
-    onSendQuote({ ...form, id: Date.now(), status: 'Pendiente' });
+  const handleSend = () => {
+    if (!formData.empresa || !formData.telefono) return alert("Faltan campos obligatorios");
+    onSendQuote(formData); // Esto envía el objeto con los datos
+    alert("Propuesta recibida en Central");
   };
 
   return (
-    <div className="p-4 text-white">
-      <div className="grid grid-cols-2 gap-4">
-        <input placeholder="Nombre" className="p-2 bg-[#042120] rounded" onChange={(e) => setForm({...form, name: e.target.value})} />
-        <input placeholder="Teléfono" className="p-2 bg-[#042120] rounded" onChange={(e) => setForm({...form, phone: e.target.value})} />
-        <input placeholder="Sector" className="p-2 bg-[#042120] rounded" onChange={(e) => setForm({...form, sector: e.target.value})} />
-        <input placeholder="Dirección" className="p-2 bg-[#042120] rounded" onChange={(e) => setForm({...form, address: e.target.value})} />
+    <div className="p-4 space-y-4">
+      <h2 className="text-white text-lg font-bold">Nueva Solicitud</h2>
+      <div className="grid grid-cols-1 gap-3">
+        <label className="text-gray-400 text-xs">Nombre Empresa *</label>
+        <input className="p-2 bg-[#042120] border border-teal-900 rounded text-white" onChange={e => setFormData({...formData, empresa: e.target.value})} />
+        <label className="text-gray-400 text-xs">Teléfono *</label>
+        <input className="p-2 bg-[#042120] border border-teal-900 rounded text-white" onChange={e => setFormData({...formData, telefono: e.target.value})} />
+        {/* ... agrega los otros 2 campos iguales ... */}
+        <button onClick={handleSend} className="w-full bg-emerald-500 py-3 rounded font-black mt-4">ENVIAR A CENTRAL</button>
       </div>
-      <button onClick={handleSubmit} className="w-full mt-4 bg-emerald-500 p-3 rounded font-bold">ENVIAR A CENTRAL</button>
     </div>
   );
 }

@@ -6,11 +6,14 @@ import MainLayout from './components/layout/MainLayout';
 import SmartQuoter from './components/quoter/SmartQuoter';
 
 export default function App() {
-  const [view, setView] = useState('landing');
+  // Estado único para la sesión: si es null, el usuario no ha entrado
   const [userSession, setUserSession] = useState(null);
-  const [quotes, setQuotes] = useState([]); // Aquí vive el flujo de datos
+  
+  // Estados de datos (el "corazón" de tu aplicación)
+  const [quotes, setQuotes] = useState([]);
   const [users, setUsers] = useState([{ name: 'Isabel León', rut: '123', role: 'client' }]);
 
+  // Lógica de comunicación entre componentes
   const handleSendQuote = (data) => {
     setQuotes([data, ...quotes]);
     alert("Cotización recibida en la Central");
@@ -20,22 +23,39 @@ export default function App() {
     setUsers([...users, newUser]);
   };
 
+  const handleLogout = () => {
+    setUserSession(null);
+  };
+
+  // ==========================================
+  // FLUJO DE ACCESO BLINDADO
+  // ==========================================
+  
+  // 1. Si no hay sesión, siempre mostramos Login
+  if (!userSession) {
+    return <Login onLoginSuccess={(user) => setUserSession(user)} />;
+  }
+
+  // 2. Si hay sesión, renderizamos según el rol del usuario
   return (
     <div className="min-h-screen bg-[#021312]">
-      {view === 'landing' && <Login onLoginSuccess={(s) => { setUserSession(s); setView(s.role === 'admin' ? 'admin' : 'client'); }} />}
-      
-      {view === 'admin' && (
+      {userSession.role === 'admin' ? (
         <AdminDashboard 
           quotes={quotes} 
           users={users} 
           onAddUser={handleAddUser}
-          onLogout={() => setView('landing')} 
+          onLogout={handleLogout} 
         />
-      )}
-
-      {view === 'client' && (
-        <MainLayout onLogout={() => setView('landing')}>
-          <SmartQuoter currentUser={userSession} onSendQuote={handleSendQuote} />
+      ) : userSession.role === 'tech' ? (
+        <TechnicianApp 
+          onLogout={handleLogout} 
+        />
+      ) : (
+        <MainLayout onLogout={handleLogout}>
+          <SmartQuoter 
+            currentUser={userSession} 
+            onSendQuote={handleSendQuote} 
+          />
         </MainLayout>
       )}
     </div>
