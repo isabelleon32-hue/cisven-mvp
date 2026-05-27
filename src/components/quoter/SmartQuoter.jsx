@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) {
-  // Pestañas del entorno unificado (Navegación Móvil/Desktop Integrada)
+export default function SmartQuoter({ catalog, currentUser, quotes, onSendQuote, onManualSchedule }) {
+  // Pestañas del entorno unificado
   const [activeTab, setActiveTab] = useState('quote'); 
   
   // Estados del flujo por pasos
@@ -27,12 +27,23 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
   const [panicActive, setPanicActive] = useState(false);
   const [observation, setObservation] = useState('');
 
+  // Autocompletar si hay un abonado logueado en el ecosistema
+  useEffect(() => {
+    if (currentUser) {
+      setCompanyName(currentUser.name || '');
+      setContactInfo(currentUser.phone || '');
+    }
+  }, [currentUser]);
+
   // Catálogo de hardware sincronizado
   const activeCatalog = Array.isArray(catalog) ? catalog : [
     { id: 1, label: '720p Básica Estándar', price: 25000, stock: 45 }, 
     { id: 2, label: '1080p Domo Alta Def.', price: 45000, stock: 30 }, 
     { id: 3, label: '4K Profesional + AI', price: 95000, stock: 12 }
   ];
+
+  // Filtrado de rebotes comerciales asociados al cliente activo
+  const myQuotes = quotes ? quotes.filter(q => q.user === (currentUser?.name || companyName)) : [];
 
   // ==========================================
   // CÁLCULO CROMÁTICO Y MATRICIAL EN TIEMPO REAL
@@ -45,7 +56,7 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
   // Transmitir Cotización al ADN del Admin
   const handleQuoteSubmit = () => {
     if (!companyName.trim() || !contactInfo.trim()) {
-      return alert('⚠️ Por favor ingresa el Nombre de la Empresa y el Contacto Operativo en el Paso 1.');
+      return alert('⚠️ Por favor ingresa el Nombre/Empresa y el Contacto Operativo en el Paso 1.');
     }
     if (typeof onSendQuote === 'function') {
       onSendQuote(
@@ -53,12 +64,14 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
         `Industrial: ${industry || 'General'}`,
         `${cameraCount}x ${currentCam.label}`,
         totalEstimated,
-        `Sede/Despliegue (${companySize || 'Estándar'})`,
+        currentUser?.address || `Sede/Despliegue (${companySize || 'Estándar'})`,
         parseInt(meters),
         contactInfo
       );
-      alert('🚀 ¡Propuesta técnica transmitida con éxito! Los datos acaban de ingresar en tiempo real a la Mesa de Control Central del Administrador.');
-      setCompanyName(''); setContactInfo(''); setIndustry(''); setCompanySize('');
+      alert('🚀 ¡Propuesta técnica transmitida con éxito! Los datos acaban de ingresar en tiempo real a la Mesa de Control Central.');
+      if (!currentUser) {
+        setCompanyName(''); setContactInfo(''); setIndustry(''); setCompanySize('');
+      }
       setStep(1);
     }
   };
@@ -70,7 +83,7 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
       return alert('⚠️ Complete los campos de identificación y la fecha para agendar la visita.');
     }
     if (typeof onManualSchedule === 'function') {
-      onManualSchedule(companyName, bookingService, bookingDate, 'Dirección de Sede Cliente', contactInfo);
+      onManualSchedule(companyName, bookingService, bookingDate, currentUser?.address || 'Dirección de Sede Cliente', contactInfo);
       alert('📅 Solicitud de asistencia en terreno registrada con éxito en la Mesa Central.');
       setBookingDate('');
     }
@@ -79,7 +92,10 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
   // Activación Cifrada de Alarma de Pánico
   const triggerPanic = () => {
     setPanicActive(true);
-    alert(`🚨 ¡ALERTA DE EMERGENCIA TRANSMITIDA! La central CISVEN ha recibido el reporte. Observación de incidencia: ${observation || 'Sin comentarios adicionales.'}`);
+    if (typeof onManualSchedule === 'function') {
+      onManualSchedule(companyName, `EMERGENCIA CRÍTICA: Despacho Inmediato - ${observation || 'S.O.S'}`, new Date().toISOString().split('T')[0], currentUser?.address || 'Ubicación Desconocida', contactInfo);
+    }
+    alert(`🚨 ¡ALERTA DE EMERGENCIA TRANSMITIDA! La central CISVEN ha recibido el reporte ocupando un cupo de urgencia inmediata.`);
     setObservation('');
     setTimeout(() => setPanicActive(false), 4000);
   };
@@ -88,6 +104,32 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
     <div className="w-full min-h-screen bg-[#021312] text-emerald-100 font-sans antialiased p-4 md:p-8 selection:bg-emerald-500 selection:text-black">
       <div className="w-full max-w-7xl mx-auto space-y-6">
         
+        {/* Historial de ofertas y rebote comercial real */}
+        {myQuotes.length > 0 && (
+          <div className="space-y-2 bg-[#042120] p-4 rounded-2xl border border-teal-950/80 shadow-xl">
+            <p className="font-black text-[#ecc245] uppercase text-[10px] tracking-wider">🔄 Canal de Rebotes y Presupuestos Oficiales de Central:</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {myQuotes.map(mq => (
+                <div key={mq.id} className="p-3 bg-[#021312] rounded-xl border border-teal-900 space-y-2 text-[11px]">
+                  <div className="flex justify-between items-center border-b border-teal-950 pb-1">
+                    <span className="font-bold text-white">{mq.cam}</span>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${mq.status === 'Respondido' ? 'bg-amber-950 text-[#ecc245] border border-amber-800' : 'bg-teal-950 text-teal-400'}`}>
+                      {mq.status === 'Respondido' ? 'Rebote Real Recibido' : 'Estudiando en Central...'}
+                    </span>
+                  </div>
+                  <p className="text-gray-400">Cubicación Estimada Inicial: <span className="font-mono font-bold">${mq.total.toLocaleString('es-CL')}</span></p>
+                  {mq.status === 'Respondido' && (
+                    <div className="p-2 bg-[#042120] border border-amber-900/30 rounded-lg space-y-1 mt-1">
+                      <p className="text-[#ecc245] font-black">➔ Valor Real Comercial: ${mq.adjustedTotal?.toLocaleString('es-CL')}</p>
+                      <p className="text-gray-300 italic">" {mq.adminNote} "</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Cabecera Corporativa Unificada */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[#042120] p-4 rounded-2xl border border-teal-950 gap-4 shadow-xl">
           <div>
@@ -124,7 +166,6 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
           {/* Panel Operativo Principal (Izquierda) */}
           <div className="lg:col-span-2 bg-[#0a3a37] border border-teal-900 rounded-3xl p-6 shadow-2xl min-h-[380px] flex flex-col justify-between">
             
-            {/* PESTAÑA A: COTIZADOR */}
             {activeTab === 'quote' && (
               <div className="space-y-4 w-full">
                 <div className="flex justify-between items-center border-b border-teal-950 pb-2 mb-2">
@@ -135,8 +176,8 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
                 {step === 1 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="block text-[10px] font-black uppercase text-gray-400">Nombre de la empresa *</label>
-                      <input type="text" placeholder="Ej: Corporación ACME" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-bold text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                      <label className="block text-[10px] font-black uppercase text-gray-400">Nombre / Empresa *</label>
+                      <input type="text" placeholder="Ej: Corporación ACME" value={companyName} onChange={e => setCompanyName(e.target.value)} disabled={!!currentUser} className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-bold text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-60" />
                     </div>
                     <div className="space-y-1">
                       <label className="block text-[10px] font-black uppercase text-gray-400">Sector Industrial</label>
@@ -148,7 +189,7 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
                     </div>
                     <div className="space-y-1">
                       <label className="block text-[10px] font-black uppercase text-gray-400">Contacto Operativo (Teléfono) *</label>
-                      <input type="text" placeholder="Ej: +56976543210" value={contactInfo} onChange={e => setContactInfo(e.target.value)} className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                      <input type="text" placeholder="Ej: +56976543210" value={contactInfo} onChange={e => setContactInfo(e.target.value)} disabled={!!currentUser} className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-60" />
                     </div>
                   </div>
                 )}
@@ -192,7 +233,6 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
                   </div>
                 )}
 
-                {/* Botonera de Navegación Interna */}
                 <div className="flex justify-between items-center pt-4 border-t border-teal-950 mt-6">
                   <button type="button" disabled={step === 1} onClick={() => setStep(p => p - 1)} className="px-4 py-2 text-[10px] font-black uppercase bg-[#042120] border border-teal-950 rounded-xl text-teal-400 disabled:opacity-30">← Anterior</button>
                   {step < 4 ? (
@@ -204,7 +244,6 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
               </div>
             )}
 
-            {/* PESTAÑA B: AGENDA TÉCNICA */}
             {activeTab === 'agenda' && (
               <form onSubmit={handleBookingSubmit} className="space-y-3 w-full">
                 <div className="border-b border-teal-950 pb-2 mb-2">
@@ -213,11 +252,11 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Organización Solicitante *</label>
-                    <input type="text" required placeholder="Nombre de Empresa" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-bold text-xs focus:outline-none" />
+                    <input type="text" required placeholder="Nombre de Empresa" value={companyName} onChange={e => setCompanyName(e.target.value)} disabled={!!currentUser} className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-bold text-xs focus:outline-none disabled:opacity-60" />
                   </div>
                   <div>
                     <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Teléfono Móvil de Contacto *</label>
-                    <input type="text" required placeholder="Ej: +569..." value={contactInfo} onChange={e => setContactInfo(e.target.value)} className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-mono text-xs focus:outline-none" />
+                    <input type="text" required placeholder="Ej: +569..." value={contactInfo} onChange={e => setContactInfo(e.target.value)} disabled={!!currentUser} className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-mono text-xs focus:outline-none disabled:opacity-60" />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -237,7 +276,6 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
               </form>
             )}
 
-            {/* PESTAÑA C: BOTÓN DE PÁNICO ALINEADO A LA MARCA */}
             {activeTab === 'panic' && (
               <div className="space-y-4 text-center w-full">
                 <div className="border-b border-teal-950 pb-2 text-left mb-2">
@@ -258,7 +296,7 @@ export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) 
 
           </div>
 
-          {/* Tarjeta Lateral de Analítica de Costos en Vivo (Derecha) - ADAPTACIÓN CRÓMATICA */}
+          {/* Tarjeta Lateral de Analítica de Costos en Vivo (Derecha) */}
           <div className="bg-[#042120] border border-teal-950 rounded-3xl p-5 shadow-2xl space-y-4">
             <h3 className="text-[10px] font-black uppercase text-teal-400 tracking-wider border-b border-teal-950 pb-2">📊 Monitor de Inversión Tecnológica</h3>
             <div className="space-y-2 text-xs font-medium text-teal-100">

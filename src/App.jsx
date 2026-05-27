@@ -9,6 +9,28 @@ import TechnicianApp from './components/TechnicianApp';
 import MainLayout from './components/layout/MainLayout';
 import SmartQuoter from './components/quoter/SmartQuoter';
 
+// Componente de exportación del Logo Corporativo para consumo del ecosistema
+export const BrandLogo = ({ size = "md" }) => (
+  <div className="flex flex-col items-center justify-center text-center font-sans select-none">
+    <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-b from-white to-gray-200 shadow-xl border-t-4 border-[#085a4f] ${size === 'lg' ? 'w-16 h-16 mb-3' : 'w-10 h-10 mb-1'}`}>
+      <div className="w-2/3 h-2/3 rounded-full bg-[#062c2a] flex items-center justify-center border border-teal-800/30">
+        <div className="w-1/2 h-1/2 rounded-full bg-white relative">
+          <div className="w-2 h-2 rounded-full bg-[#062c2a] absolute top-0.5 right-0.5"></div>
+        </div>
+      </div>
+      <div className="absolute w-full h-full bg-teal-400/10 rounded-full animate-ping opacity-20"></div>
+    </div>
+    <div>
+      <h1 className={`font-black tracking-widest text-white uppercase leading-none ${size === 'lg' ? 'text-3xl' : 'text-base'}`}>
+        CIS<span className="text-gray-300">VEN</span>
+      </h1>
+      <p className={`text-[#ecc245] uppercase tracking-widest font-black ${size === 'lg' ? 'text-[10px] mt-1.5' : 'text-[7px] mt-0.5'}`}>
+        Seguridad AI
+      </p>
+    </div>
+  </div>
+);
+
 export default function App() {
   const [view, setView] = useState('landing');
   const [userSession, setUserSession] = useState(null);
@@ -167,26 +189,34 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#042120] w-full text-white">
-      {/* PORTAL DEL CLIENTE ORIGINAL INTEGRADO EN SU DISPOSITIVO MÓVIL */}
-      {view === 'client-quoter' && userSession?.role === 'client' && (
-        <MainLayout onLogout={handleLogout}>
-          <SmartQuoter 
-            catalog={cameraCatalog} 
-            onSendQuote={handleSendQuote} 
-            onManualSchedule={handleManualSchedule} 
-          />
-        </MainLayout>
+      {/* PANTALLA GENERAL DE ACCESO (LANDING / LOGIN) */}
+      {view === 'landing' && (
+        <Login onLoginSuccess={handleLoginSuccess} />
       )}
-          quotes={quotes} onAdjustQuote={handleAdjustQuote}
-          appointments={appointments} onManualSchedule={handleManualSchedule}
-          blockedDates={blockedDates} onToggleBlockDate={handleToggleBlockDate}
-          users={users} onAssignTech={handleAssignTech} onConfirmDispatch={handleConfirmDispatch}
-          onApproveQuote={handleApproveQuote} onArchiveJob={handleAdminArchiveJob}
+
+      {/* CONSOLA CENTRAL ADMINISTRATIVA */}
+      {view === 'admin-ops' && userSession?.role === 'admin' && (
+        <AdminDashboard 
+          setView={handleLogout} 
+          catalog={cameraCatalog} 
+          onAddProduct={handleAddProduct} 
+          onDeleteProduct={handleDeleteProduct}
+          quotes={quotes} 
+          onAdjustQuote={handleAdjustQuote}
+          appointments={appointments} 
+          onManualSchedule={handleManualSchedule}
+          blockedDates={blockedDates} 
+          onToggleBlockDate={handleToggleBlockDate}
+          users={users} 
+          onAssignTech={handleAssignTech} 
+          onConfirmDispatch={handleConfirmDispatch}
+          onApproveQuote={handleApproveQuote} 
+          onArchiveJob={handleAdminArchiveJob}
           analytics={analytics}
         />
       )}
 
-      {/* CONSOLA OPERATIVA DEL TÉCNICO (Mobile Responsivo Nativo) */}
+      {/* CONSOLA OPERATIVA DEL TÉCNICO */}
       {view === 'tecnico-app' && userSession?.role === 'tech' && (
         <TechnicianApp 
           setView={handleLogout} 
@@ -198,7 +228,13 @@ export default function App() {
       {/* PORTAL DEL CLIENTE ORIGINAL (Ancho completo, fluido y expansivo) */}
       {view === 'client-quoter' && userSession?.role === 'client' && (
         <MainLayout onLogout={handleLogout}>
-          <SmartQuoter catalog={cameraCatalog} onSendQuote={handleSendQuote} />
+          <SmartQuoter 
+            catalog={cameraCatalog} 
+            currentUser={userSession}
+            quotes={quotes}
+            onSendQuote={handleSendQuote} 
+            onManualSchedule={handleManualSchedule}
+          />
         </MainLayout>
       )}
     </div>
