@@ -5,31 +5,9 @@ import Login from './components/auth/Login';
 import AdminDashboard from './components/AdminDashboard';
 import TechnicianApp from './components/TechnicianApp';
 
-// Importación de tus layouts estructurales nativos (Visión de ancho completo)
+// Importación de layouts y componentes del cliente
 import MainLayout from './components/layout/MainLayout';
 import SmartQuoter from './components/quoter/SmartQuoter';
-
-// Componente de exportación del Logo Corporativo para consumo del ecosistema
-export const BrandLogo = ({ size = "md" }) => (
-  <div className="flex flex-col items-center justify-center text-center font-sans select-none">
-    <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-b from-white to-gray-200 shadow-xl border-t-4 border-[#085a4f] ${size === 'lg' ? 'w-16 h-16 mb-3' : 'w-10 h-10 mb-1'}`}>
-      <div className="w-2/3 h-2/3 rounded-full bg-[#062c2a] flex items-center justify-center border border-teal-800/30">
-        <div className="w-1/2 h-1/2 rounded-full bg-white relative">
-          <div className="w-2 h-2 rounded-full bg-[#062c2a] absolute top-0.5 right-0.5"></div>
-        </div>
-      </div>
-      <div className="absolute w-full h-full bg-teal-400/10 rounded-full animate-ping opacity-20"></div>
-    </div>
-    <div>
-      <h1 className={`font-black tracking-widest text-white uppercase leading-none ${size === 'lg' ? 'text-3xl' : 'text-base'}`}>
-        CIS<span className="text-gray-300">VEN</span>
-      </h1>
-      <p className={`text-[#ecc245] uppercase tracking-widest font-black ${size === 'lg' ? 'text-[10px] mt-1.5' : 'text-[7px] mt-0.5'}`}>
-        Seguridad AI
-      </p>
-    </div>
-  </div>
-);
 
 export default function App() {
   const [view, setView] = useState('landing');
@@ -50,23 +28,18 @@ export default function App() {
   const [users, setUsers] = useState(() => {
     const local = localStorage.getItem('cisven_users');
     return local ? JSON.parse(local) : [
-      { id: 1, name: 'Isabel Cristina León', rut: '1-9', address: 'Av. Américo Vespucio 1500, Maipú', phone: '+56976543210', contract: 'Monitoreo Residencial Pro AI', installedHardware: '4x Cámaras Domo 1080p / 1x Grabador NVR', status: 'Activo', historyLog: [] }
+      { id: 1, name: 'Isabel Cristina León', rut: '1-9', address: 'Av. Américo Vespucio 1500, Maipú', phone: '+56976543210', contract: 'Monitoreo Residencial Pro AI', status: 'Activo' }
     ];
   });
   
   const [quotes, setQuotes] = useState(() => JSON.parse(localStorage.getItem('cisven_quotes')) || []);
   const [appointments, setAppointments] = useState(() => JSON.parse(localStorage.getItem('cisven_appointments')) || []);
   const [blockedDates, setBlockedDates] = useState(() => JSON.parse(localStorage.getItem('cisven_blocked_dates')) || []);
-  
   const [analytics, setAnalytics] = useState(() => JSON.parse(localStorage.getItem('cisven_analytics')) || { 
-    totalRevenue: 0, 
-    closedTicketsCount: 0, 
-    totalMeters: 0, 
-    techPerformance: {}, 
-    customerSpend: {} 
+    totalRevenue: 0, closedTicketsCount: 0, totalMeters: 0, techPerformance: {}, customerSpend: {} 
   });
 
-  // Sincronización Automática de Datos (Persistencia Local)
+  // Sincronización Automática de Datos
   useEffect(() => { localStorage.setItem('cisven_catalog', JSON.stringify(cameraCatalog)); }, [cameraCatalog]);
   useEffect(() => { localStorage.setItem('cisven_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('cisven_quotes', JSON.stringify(quotes)); }, [quotes]);
@@ -77,19 +50,13 @@ export default function App() {
   // ==========================================
   // MANEJADORES DE LÓGICA OPERATIVA
   // ==========================================
-  const handleAddProduct = (label, price, stock) => {
-    setCameraCatalog([...cameraCatalog, { id: Date.now(), label, price, stock }]);
-  };
-
-  const handleDeleteProduct = (id) => {
-    setCameraCatalog(cameraCatalog.filter(item => item.id !== id));
-  };
-
   const handleSendQuote = (user, type, cam, total, address, mtrs, clientPhone) => {
-    const phoneToInject = clientPhone || users.find(u => u.name === user)?.phone || '+56976543210';
-    const tomorrowStr = new Date(); tomorrowStr.setDate(tomorrowStr.getDate() + 1);
-    const dateStr = tomorrowStr.toISOString().split('T')[0];
-    setQuotes([{ id: Date.now(), user, type, cam, total, address, meters: mtrs, phone: phoneToInject, status: 'Pendiente', date: dateStr }, ...quotes]);
+    const newQuote = { 
+      id: Date.now(), user, type, cam, total, address, 
+      meters: mtrs, phone: clientPhone, status: 'Pendiente', 
+      date: new Date().toISOString().split('T')[0] 
+    };
+    setQuotes([newQuote, ...quotes]);
   };
 
   const handleAdjustQuote = (id, price, note) => {
@@ -97,143 +64,68 @@ export default function App() {
   };
 
   const handleManualSchedule = (name, service, date, address, phone) => {
-    setAppointments([{ id: Date.now(), user: name, service, date, address, phone, technician: 'Sin Asignar', status: 'Asignado', techObservation: '', price: 45000, meters: 15 }, ...appointments]);
+    setAppointments([{ id: Date.now(), user: name, service, date, address, phone, technician: 'Sin Asignar', status: 'Asignado' }, ...appointments]);
   };
 
   const handleToggleBlockDate = (dateString) => {
-    if (blockedDates.includes(dateString)) { setBlockedDates(blockedDates.filter(d => d !== dateString)); } 
-    else { setBlockedDates([...blockedDates, dateString]); }
+    setBlockedDates(blockedDates.includes(dateString) ? blockedDates.filter(d => d !== dateString) : [...blockedDates, dateString]);
   };
 
-  const handleAssignTech = (id, technicianName) => {
-    setAppointments(appointments.map(item => item.id === id ? { ...item, technician: technicianName } : item));
+  const handleAssignTech = (id, tech) => setAppointments(appointments.map(a => a.id === id ? { ...a, technician: tech } : a));
+  const handleConfirmDispatch = (id) => setAppointments(appointments.map(a => a.id === id ? { ...a, status: 'En Ruta' } : a));
+  
+  const handleApproveQuote = (qObj) => {
+    const job = { id: Date.now(), user: qObj.user, service: qObj.cam, date: qObj.date, address: qObj.address, phone: qObj.phone, technician: 'Sin Asignar', status: 'Asignado', price: qObj.adjustedTotal || qObj.total };
+    setAppointments([job, ...appointments]);
+    setQuotes(quotes.filter(q => q.id !== qObj.id));
   };
 
-  const handleConfirmDispatch = (id) => {
-    setAppointments(appointments.map(item => item.id === id ? { ...item, status: 'En Ruta' } : item));
+  const handleUpdateTechReport = (id, text, meters) => setAppointments(appointments.map(a => a.id === id ? { ...a, status: 'Revisión Técnico', techObservation: text, meters } : a));
+
+  const handleAdminArchiveJob = (id, userName, techName, obs, service, price, meters) => {
+    setAppointments(appointments.filter(j => j.id !== id));
+    setAnalytics(prev => ({
+      totalRevenue: prev.totalRevenue + (parseInt(price) || 0),
+      closedTicketsCount: prev.closedTicketsCount + 1,
+      totalMeters: prev.totalMeters + (parseInt(meters) || 0),
+      techPerformance: { ...prev.techPerformance, [techName || 'Sin Asignar']: (prev.techPerformance[techName] || 0) + 1 }
+    }));
   };
 
-  const handleApproveQuote = (quoteObject) => {
-    const approvedJob = {
-      id: Date.now(),
-      user: quoteObject.user,
-      service: quoteObject.cam.length > 30 ? quoteObject.cam.substring(0, 27) + '...' : quoteObject.cam,
-      date: quoteObject.date,
-      address: quoteObject.address,
-      phone: quoteObject.phone || '+56976543210', 
-      technician: 'Sin Asignar', status: 'Asignado', techObservation: '',
-      price: quoteObject.adjustedTotal || quoteObject.total,
-      meters: quoteObject.meters || 15
-    };
-    setAppointments([approvedJob, ...appointments]);
-    setQuotes(quotes.filter(q => q.id !== quoteObject.id));
-  };
-
-  const handleUpdateTechReport = (id, reportText, usedHardware, meters) => {
-    setAppointments(prevApps => prevApps.map(item => 
-      item.id === id ? { ...item, status: 'Revisión Técnico', techObservation: reportText, meters: meters } : item
-    ));
-  };
-
-  const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName, ticketPrice, ticketMeters) => {
-    setAppointments(prevApps => prevApps.filter(j => j.id !== id));
-    
-    setUsers(prevUsers => prevUsers.map(u => 
-      u.name === userName 
-        ? { 
-            ...u, 
-            historyLog: [
-              { 
-                id: Date.now(), 
-                date: new Date().toLocaleDateString('es-CL'), 
-                type: serviceName || 'Servicio Técnico', 
-                technician: technicianName || 'Técnico CISVEN', 
-                detail: finalObservation || 'Instalación completada sin novedades.' 
-              }, 
-              ...(u.historyLog || [])
-            ] 
-          } 
-        : u
-    ));
-
-    setAnalytics(prev => {
-      const safePrice = parseInt(ticketPrice) || 0;
-      const safeMeters = parseInt(ticketMeters) || 0;
-      const safeTech = technicianName || 'Sin Asignar';
-      const safeUser = userName || 'Abonado General';
-
-      return {
-        totalRevenue: (prev?.totalRevenue || 0) + safePrice,
-        closedTicketsCount: (prev?.closedTicketsCount || 0) + 1,
-        totalMeters: (prev?.totalMeters || 0) + safeMeters,
-        techPerformance: { ...prev?.techPerformance, [safeTech]: (prev?.techPerformance?.[safeTech] || 0) + 1 },
-        customerSpend: { ...prev?.customerSpend, [safeUser]: (prev?.customerSpend?.[safeUser] || 0) + safePrice }
-      };
-    });
-  };
-
-  // ==========================================
-  // MANEJADORES DE RUTA Y CONTROL DE ACCESO
-  // ==========================================
   const handleLoginSuccess = (session) => {
     setUserSession(session);
     if (session.role === 'admin') setView('admin-ops');
-    if (session.role === 'tech') setView('tecnico-app');
-    if (session.role === 'client') setView('client-quoter');
+    else if (session.role === 'tech') setView('tecnico-app');
+    else setView('client-quoter');
   };
 
-  const handleLogout = () => {
-    setUserSession(null);
-    setView('landing');
-  };
+  const handleLogout = () => { setUserSession(null); setView('landing'); };
 
   return (
     <div className="min-h-screen bg-[#042120] w-full text-white">
-      {/* PANTALLA GENERAL DE ACCESO (LANDING / LOGIN) */}
-      {view === 'landing' && (
-        <Login onLoginSuccess={handleLoginSuccess} />
-      )}
+      {view === 'landing' && <Login onLoginSuccess={handleLoginSuccess} />}
 
-      {/* CONSOLA CENTRAL ADMINISTRATIVA */}
       {view === 'admin-ops' && userSession?.role === 'admin' && (
         <AdminDashboard 
-          setView={handleLogout} 
-          catalog={cameraCatalog} 
-          onAddProduct={handleAddProduct} 
-          onDeleteProduct={handleDeleteProduct}
-          quotes={quotes} 
-          onAdjustQuote={handleAdjustQuote}
-          appointments={appointments} 
-          onManualSchedule={handleManualSchedule}
-          blockedDates={blockedDates} 
-          onToggleBlockDate={handleToggleBlockDate}
-          users={users} 
-          onAssignTech={handleAssignTech} 
-          onConfirmDispatch={handleConfirmDispatch}
-          onApproveQuote={handleApproveQuote} 
-          onArchiveJob={handleAdminArchiveJob}
+          setView={handleLogout} catalog={cameraCatalog} quotes={quotes} 
+          onAdjustQuote={handleAdjustQuote} appointments={appointments} 
+          onManualSchedule={handleManualSchedule} blockedDates={blockedDates} 
+          onToggleBlockDate={handleToggleBlockDate} users={users} 
+          onAssignTech={handleAssignTech} onConfirmDispatch={handleConfirmDispatch}
+          onApproveQuote={handleApproveQuote} onArchiveJob={handleAdminArchiveJob}
           analytics={analytics}
         />
       )}
 
-      {/* CONSOLA OPERATIVA DEL TÉCNICO */}
       {view === 'tecnico-app' && userSession?.role === 'tech' && (
-        <TechnicianApp 
-          setView={handleLogout} 
-          appointments={appointments} 
-          onUpdateTechReport={handleUpdateTechReport} 
-        />
+        <TechnicianApp setView={handleLogout} appointments={appointments} onUpdateTechReport={handleUpdateTechReport} />
       )}
 
-      {/* PORTAL DEL CLIENTE ORIGINAL (Ancho completo, fluido y expansivo) */}
-      {view === 'client-quoter' && userSession?.role === 'client' && (
+      {view === 'client-quoter' && (
         <MainLayout onLogout={handleLogout}>
           <SmartQuoter 
-            catalog={cameraCatalog} 
-            currentUser={userSession}
-            quotes={quotes}
-            onSendQuote={handleSendQuote} 
-            onManualSchedule={handleManualSchedule}
+            catalog={cameraCatalog} currentUser={userSession} quotes={quotes}
+            onSendQuote={handleSendQuote} onManualSchedule={handleManualSchedule}
           />
         </MainLayout>
       )}
