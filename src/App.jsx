@@ -108,20 +108,16 @@ export default function App() {
     setQuotes(quotes.filter(q => q.id !== quoteObject.id));
   };
 
+  // Conexión exacta con TechnicianApp para recibir reportes de campo
   const handleUpdateTechReport = (id, reportText, usedHardware, meters) => {
     setAppointments(appointments.map(item => 
       item.id === id ? { ...item, status: 'Revisión Técnico', techObservation: reportText, meters: meters } : item
     ));
   };
 
-  // =========================================================================
-  // CORRECCIÓN QUIRÚRGICA: Función robusta mapeada para la Mesa de Control Admin
-  // =========================================================================
   const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName, ticketPrice, ticketMeters) => {
-    // 1. Removemos la orden de la mesa operativa de forma inmediata
     setAppointments(prevApps => prevApps.filter(j => j.id !== id));
     
-    // 2. Insertamos la bitácora de terreno blindada en el expediente del cliente
     setUsers(prevUsers => prevUsers.map(u => 
       u.name === userName 
         ? { 
@@ -140,7 +136,6 @@ export default function App() {
         : u
     ));
 
-    // 3. Procesamos analíticas verificando que los objetos y números no vengan vacíos (Previene pantallas en blanco)
     setAnalytics(prev => {
       const safePrice = parseInt(ticketPrice) || 0;
       const safeMeters = parseInt(ticketMeters) || 0;
@@ -167,12 +162,13 @@ export default function App() {
   };
 
   // ==========================================
-  // MANEJADORES DE SESIÓN
+  // MANEJADORES DE SESIÓN (CONEXIÓN CORREGIDA)
   // ==========================================
   const handleLoginSuccess = (session) => {
     setUserSession(session);
     if (session.role === 'admin') setView('admin-ops');
     if (session.role === 'tech') setView('tecnico-app');
+    if (session.role === 'client') setView('client-quoter'); // <- ¡AQUÍ ESTÁ LA LÍNEA CONECTADA!
   };
 
   const handleLogout = () => {
@@ -210,7 +206,7 @@ export default function App() {
         />
       )}
 
-      {view === 'client-quoter' && (
+      {view === 'client-quoter' && userSession?.role === 'client' && (
         <MainLayout onLogout={handleLogout}>
           <SmartQuoter catalog={cameraCatalog} onSendQuote={handleSendQuote} />
         </MainLayout>
