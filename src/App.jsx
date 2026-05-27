@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 
-// Importamos los componentes modulares y seguros que creaste paso a paso
+// Importación de componentes modulares y pantallas operativas
 import Login from './components/auth/Login';
 import AdminDashboard from './components/AdminDashboard';
 import TechnicianApp from './components/TechnicianApp';
 
-// Importamos los layouts que ya tenías estructurados en tu proyecto
+// Importación de tus layouts estructurales nativos
 import MainLayout from './components/layout/MainLayout';
 import SmartQuoter from './components/quoter/SmartQuoter';
 
 export default function App() {
-  // Estado para saber quién está logueado y qué vista mostrar
   const [view, setView] = useState('landing');
-  const [userSession, setUserSession] = useState(null); // Guards: 'admin', 'tech', o 'client'
+  const [userSession, setUserSession] = useState(null);
   
   // ==========================================
   // ESTADOS GLOBALES (Persistidos en LocalStorage)
@@ -45,7 +44,7 @@ export default function App() {
     customerSpend: {} 
   });
 
-  // Efectos para mantener la base de datos local sincronizada al milisegundo
+  // Sincronización de Persistencia de Datos
   useEffect(() => { localStorage.setItem('cisven_catalog', JSON.stringify(cameraCatalog)); }, [cameraCatalog]);
   useEffect(() => { localStorage.setItem('cisven_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('cisven_quotes', JSON.stringify(quotes)); }, [quotes]);
@@ -54,7 +53,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('cisven_analytics', JSON.stringify(analytics)); }, [analytics]);
 
   // ==========================================
-  // MANEJADORES DE LOGICA (Gatillos de datos)
+  // MANEJADORES DE LOGICA CENTRAL
   // ==========================================
   const handleAddProduct = (label, price, stock) => {
     setCameraCatalog([...cameraCatalog, { id: Date.now(), label, price, stock }]);
@@ -108,7 +107,6 @@ export default function App() {
     setQuotes(quotes.filter(q => q.id !== quoteObject.id));
   };
 
-  // Conexión exacta con TechnicianApp para recibir reportes de campo
   const handleUpdateTechReport = (id, reportText, usedHardware, meters) => {
     setAppointments(appointments.map(item => 
       item.id === id ? { ...item, status: 'Revisión Técnico', techObservation: reportText, meters: meters } : item
@@ -142,33 +140,24 @@ export default function App() {
       const safeTech = technicianName || 'Sin Asignar';
       const safeUser = userName || 'Abonado General';
 
-      const currentTechCount = prev?.techPerformance?.[safeTech] || 0;
-      const currentCustomerSpend = prev?.customerSpend?.[safeUser] || 0;
-
       return {
         totalRevenue: (prev?.totalRevenue || 0) + safePrice,
         closedTicketsCount: (prev?.closedTicketsCount || 0) + 1,
         totalMeters: (prev?.totalMeters || 0) + safeMeters,
-        techPerformance: { 
-          ...(prev?.techPerformance || {}), 
-          [safeTech]: currentTechCount + 1 
-        },
-        customerSpend: { 
-          ...(prev?.customerSpend || {}), 
-          [safeUser]: currentCustomerSpend + safePrice 
-        }
+        techPerformance: { ...prev?.techPerformance, [safeTech]: (prev?.techPerformance?.[safeTech] || 0) + 1 },
+        customerSpend: { ...prev?.customerSpend, [safeUser]: (prev?.customerSpend?.[safeUser] || 0) + safePrice }
       };
     });
   };
 
   // ==========================================
-  // MANEJADORES DE SESIÓN (CONEXIÓN CORREGIDA)
+  // MANEJADORES DE ENRUTAMIENTO Y SESIÓN
   // ==========================================
   const handleLoginSuccess = (session) => {
     setUserSession(session);
     if (session.role === 'admin') setView('admin-ops');
     if (session.role === 'tech') setView('tecnico-app');
-    if (session.role === 'client') setView('client-quoter'); // <- ¡AQUÍ ESTÁ LA LÍNEA CONECTADA!
+    if (session.role === 'client') setView('client-quoter');
   };
 
   const handleLogout = () => {
@@ -176,15 +165,13 @@ export default function App() {
     setView('landing');
   };
 
-  // ==========================================
-  // ENRUTADOR DE VISTAS SEGURO
-  // ==========================================
   return (
-    <div className="min-h-screen bg-[#042120] w-full text-white">
+    <div className="min-h-screen bg-[#042120] w-full text-white overflow-x-hidden">
       {view === 'landing' && (
         <Login onLoginSuccess={handleLoginSuccess} />
       )}
 
+      {/* PANEL ADMINISTRATIVO: Escalable en pantalla completa (PC y tablet) */}
       {view === 'admin-ops' && userSession?.role === 'admin' && (
         <AdminDashboard 
           setView={setView} catalog={cameraCatalog} 
@@ -198,18 +185,28 @@ export default function App() {
         />
       )}
 
+      {/* TERMINAL DEL TÉCNICO: Forzado a entorno Mobile nativo */}
       {view === 'tecnico-app' && userSession?.role === 'tech' && (
-        <TechnicianApp 
-          setView={handleLogout} 
-          appointments={appointments} 
-          onUpdateTechReport={handleUpdateTechReport} 
-        />
+        <div className="min-h-screen bg-[#042120] flex justify-center items-start">
+          <div className="w-full max-w-md min-h-screen bg-[#021312] shadow-2xl border-x border-teal-900/40">
+            <TechnicianApp 
+              setView={handleLogout} 
+              appointments={appointments} 
+              onUpdateTechReport={handleUpdateTechReport} 
+            />
+          </div>
+        </div>
       )}
 
+      {/* PORTAL DEL CLIENTE / ABONADO: Envuelto en su MainLayout Mobile nativo */}
       {view === 'client-quoter' && userSession?.role === 'client' && (
-        <MainLayout onLogout={handleLogout}>
-          <SmartQuoter catalog={cameraCatalog} onSendQuote={handleSendQuote} />
-        </MainLayout>
+        <div className="min-h-screen bg-[#042120] flex justify-center items-start">
+          <div className="w-full max-w-md min-h-screen shadow-2xl">
+            <MainLayout onLogout={handleLogout}>
+              <SmartQuoter catalog={cameraCatalog} onSendQuote={handleSendQuote} />
+            </MainLayout>
+          </div>
+        </div>
       )}
     </div>
   );
