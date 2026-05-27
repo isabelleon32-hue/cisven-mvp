@@ -12,7 +12,7 @@ import SmartQuoter from './components/quoter/SmartQuoter';
 export default function App() {
   // Estado para saber quién está logueado y qué vista mostrar
   const [view, setView] = useState('landing');
-  const [userSession, setUserSession] = useState(null); // Guarda el rol: 'admin', 'tech', o 'client'
+  const [userSession, setUserSession] = useState(null); // Guards: 'admin', 'tech', o 'client'
   
   // ==========================================
   // ESTADOS GLOBALES (Persistidos en LocalStorage)
@@ -108,36 +108,67 @@ export default function App() {
     setQuotes(quotes.filter(q => q.id !== quoteObject.id));
   };
 
-  // Manejador del reporte del Técnico en Terreno
   const handleUpdateTechReport = (id, reportText, usedHardware, meters) => {
     setAppointments(appointments.map(item => 
       item.id === id ? { ...item, status: 'Revisión Técnico', techObservation: reportText, meters: meters } : item
     ));
   };
 
+  // =========================================================================
+  // CORRECCIÓN QUIRÚRGICA: Función robusta mapeada para la Mesa de Control Admin
+  // =========================================================================
   const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName, ticketPrice, ticketMeters) => {
-    setAppointments(appointments.filter(j => j.id !== id));
+    // 1. Removemos la orden de la mesa operativa de forma inmediata
+    setAppointments(prevApps => prevApps.filter(j => j.id !== id));
     
-    setUsers(users.map(u => 
+    // 2. Insertamos la bitácora de terreno blindada en el expediente del cliente
+    setUsers(prevUsers => prevUsers.map(u => 
       u.name === userName 
-        ? { ...u, historyLog: [{ id: Date.now(), date: new Date().toLocaleDateString('es-CL'), type: serviceName, technician: technicianName, detail: finalObservation }, ...(u.historyLog || [])] } 
+        ? { 
+            ...u, 
+            historyLog: [
+              { 
+                id: Date.now(), 
+                date: new Date().toLocaleDateString('es-CL'), 
+                type: serviceName || 'Servicio Técnico', 
+                technician: technicianName || 'Técnico CISVEN', 
+                detail: finalObservation || 'Trabajo cerrado sin incidencias.' 
+              }, 
+              ...(u.historyLog || [])
+            ] 
+          } 
         : u
     ));
 
+    // 3. Procesamos analíticas verificando que los objetos y números no vengan vacíos (Previene pantallas en blanco)
     setAnalytics(prev => {
-      const currentTechCount = prev.techPerformance[technicianName] || 0;
-      const currentCustomerSpend = prev.customerSpend[userName] || 0;
+      const safePrice = parseInt(ticketPrice) || 0;
+      const safeMeters = parseInt(ticketMeters) || 0;
+      const safeTech = technicianName || 'Sin Asignar';
+      const safeUser = userName || 'Abonado General';
+
+      const currentTechCount = prev?.techPerformance?.[safeTech] || 0;
+      const currentCustomerSpend = prev?.customerSpend?.[safeUser] || 0;
+
       return {
-        totalRevenue: prev.totalRevenue + (ticketPrice || 0),
-        closedTicketsCount: prev.closedTicketsCount + 1,
-        totalMeters: prev.totalMeters + (ticketMeters || 15),
-        techPerformance: { ...prev.techPerformance, [technicianName]: currentTechCount + 1 },
-        customerSpend: { ...prev.customerSpend, [userName]: currentCustomerSpend + (ticketPrice || 0) }
+        totalRevenue: (prev?.totalRevenue || 0) + safePrice,
+        closedTicketsCount: (prev?.closedTicketsCount || 0) + 1,
+        totalMeters: (prev?.totalMeters || 0) + safeMeters,
+        techPerformance: { 
+          ...(prev?.techPerformance || {}), 
+          [safeTech]: currentTechCount + 1 
+        },
+        customerSpend: { 
+          ...(prev?.customerSpend || {}), 
+          [safeUser]: currentCustomerSpend + safePrice 
+        }
       };
     });
   };
 
-  // Manejador del Login Exitoso con roles
+  // ==========================================
+  // MANEJADORES DE SESIÓN
+  // ==========================================
   const handleLoginSuccess = (session) => {
     setUserSession(session);
     if (session.role === 'admin') setView('admin-ops');
@@ -150,7 +181,7 @@ export default function App() {
   };
 
   // ==========================================
-  // ENRUTADOR DE VISTAS (Rendereo Condicional Seguro)
+  // ENRUTADOR DE VISTAS SEGURO
   // ==========================================
   return (
     <div className="min-h-screen bg-[#042120] w-full text-white">
@@ -179,7 +210,6 @@ export default function App() {
         />
       )}
 
-      {/* Nota: Las vistas públicas de cliente usarán tus componentes Layout y Quoter existentes */}
       {view === 'client-quoter' && (
         <MainLayout onLogout={handleLogout}>
           <SmartQuoter catalog={cameraCatalog} onSendQuote={handleSendQuote} />
