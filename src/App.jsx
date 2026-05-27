@@ -167,15 +167,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#042120] w-full text-white">
-      {view === 'landing' && (
-        <Login onLoginSuccess={handleLoginSuccess} />
+      {/* PORTAL DEL CLIENTE ORIGINAL INTEGRADO EN SU DISPOSITIVO MÓVIL */}
+      {view === 'client-quoter' && userSession?.role === 'client' && (
+        <MainLayout onLogout={handleLogout}>
+          <SmartQuoter 
+            catalog={cameraCatalog} 
+            onSendQuote={handleSendQuote} 
+            onManualSchedule={handleManualSchedule} 
+          />
+        </MainLayout>
       )}
-
-      {/* CONSOLA CENTRAL ADMINISTRATIVA (Pantalla Completa Original) */}
-      {view === 'admin-ops' && userSession?.role === 'admin' && (
-        <AdminDashboard 
-          setView={setView} catalog={cameraCatalog} 
-          onAddProduct={handleAddProduct} onDeleteProduct={handleDeleteProduct}
           quotes={quotes} onAdjustQuote={handleAdjustQuote}
           appointments={appointments} onManualSchedule={handleManualSchedule}
           blockedDates={blockedDates} onToggleBlockDate={handleToggleBlockDate}
