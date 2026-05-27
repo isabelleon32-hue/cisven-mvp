@@ -1,51 +1,21 @@
 import React, { useState } from 'react';
 
-export default function SmartQuoter({ catalog, currentUser, onSendQuote, onManualSchedule }) {
-  // Secciones: 0=Inicio, 1=Cotizar, 2=Agendar, 3=Alerta
-  const [activeView, setActiveView] = useState(0); 
-  
-  return (
-    <div className="flex flex-col h-full">
-      {/* 1. Área de Contenido Dinámico */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        {activeView === 0 && (
-          <div className="text-white">
-            <h2 className="text-lg font-bold mb-4">Tus Servicios</h2>
-            <div className="bg-[#0a3a37] p-4 rounded-xl border border-teal-900">
-              <p>Hola, {currentUser?.name}</p>
-              <p className="text-sm text-teal-400">Estado: {currentUser?.status || 'Activo'}</p>
-              <p className="mt-2 text-xs">Instalación: {currentUser?.installedHardware || 'No disponible'}</p>
-            </div>
-          </div>
-        )}
-        
-        {activeView === 1 && (
-          <div className="text-white">
-            <h2 className="text-lg font-bold mb-4">Nueva Cotización</h2>
-            {/* Aquí tus campos de nombre, sector, sedes */}
-            <input placeholder="Nombre" className="w-full p-2 mb-2 bg-[#042120] rounded" />
-            <input placeholder="Sector" className="w-full p-2 mb-2 bg-[#042120] rounded" />
-            <button className="w-full bg-emerald-500 p-2 rounded text-black font-bold">Enviar</button>
-          </div>
-        )}
-        
-        {activeView === 2 && <div className="text-white"><h2>Agendar Visita</h2></div>}
-        {activeView === 3 && <div className="text-white"><h2>BOTÓN DE PÁNICO</h2></div>}
-      </div>
+export default function SmartQuoter({ currentUser, onSendQuote }) {
+  const [form, setForm] = useState({ name: '', phone: '', sector: '', address: '' });
 
-      {/* 2. Barra de Navegación Inferior (Las 4 secciones) */}
-      <div className="grid grid-cols-4 bg-[#042120] p-2 border-t border-teal-900">
-        <NavButton active={activeView === 0} onClick={() => setActiveView(0)} label="Inicio" />
-        <NavButton active={activeView === 1} onClick={() => setActiveView(1)} label="Cotizar" />
-        <NavButton active={activeView === 2} onClick={() => setActiveView(2)} label="Agendar" />
-        <NavButton active={activeView === 3} onClick={() => setActiveView(3)} label="Alerta" />
+  const handleSubmit = () => {
+    onSendQuote({ ...form, id: Date.now(), status: 'Pendiente' });
+  };
+
+  return (
+    <div className="p-4 text-white">
+      <div className="grid grid-cols-2 gap-4">
+        <input placeholder="Nombre" className="p-2 bg-[#042120] rounded" onChange={(e) => setForm({...form, name: e.target.value})} />
+        <input placeholder="Teléfono" className="p-2 bg-[#042120] rounded" onChange={(e) => setForm({...form, phone: e.target.value})} />
+        <input placeholder="Sector" className="p-2 bg-[#042120] rounded" onChange={(e) => setForm({...form, sector: e.target.value})} />
+        <input placeholder="Dirección" className="p-2 bg-[#042120] rounded" onChange={(e) => setForm({...form, address: e.target.value})} />
       </div>
+      <button onClick={handleSubmit} className="w-full mt-4 bg-emerald-500 p-3 rounded font-bold">ENVIAR A CENTRAL</button>
     </div>
   );
 }
-
-const NavButton = ({ active, onClick, label }) => (
-  <button onClick={onClick} className={`p-2 text-[9px] font-bold uppercase ${active ? 'text-emerald-500' : 'text-gray-500'}`}>
-    {label}
-  </button>
-);
