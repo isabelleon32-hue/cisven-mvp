@@ -68,7 +68,7 @@ function Landing({ setView }) {
             
             <div className="grid grid-cols-2 gap-2 mt-2">
               <button type="button" onClick={() => setAuthMode('tech')} className="bg-[#042120] hover:bg-[#07302e] text-teal-300 py-2.5 rounded-xl border border-teal-900 text-[10px] font-bold uppercase tracking-wider">
-                👷 App Técnico
+                Contractor App
               </button>
               <button type="button" onClick={() => setAuthMode('admin')} className="bg-[#042120] hover:bg-[#07302e] text-teal-300 py-2.5 rounded-xl border border-teal-900 text-[10px] font-bold uppercase tracking-wider">
                 💼 Panel Admin
@@ -175,7 +175,7 @@ function AdminDashboard({
   setView, catalog, onAddProduct, onDeleteProduct, 
   quotes, onAdjustQuote, appointments, onManualSchedule, 
   blockedDates, onToggleBlockDate, users, onAssignTech, onConfirmDispatch, onArchiveJob,
-  analytics
+  onApproveQuote, analytics
 }) {
   const [tab, setTab] = useState('ops');
   const [selectedUserFolder, setSelectedUserFolder] = useState(null);
@@ -437,7 +437,6 @@ function AdminDashboard({
                             {staff.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                           {app.technician && app.technician !== 'Sin Asignar' && (
-                            /* SANEADO COMPLETAMENTE EL GATILLO CRÍTICO DE RUTA ACTIVA */
                             <button type="button" onClick={() => onConfirmDispatch(app.id)} className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white text-[10px] font-black py-1.5 rounded-lg uppercase tracking-wider transition-all">
                               🚀 Confirmar y Despachar Ruta
                             </button>
@@ -452,7 +451,7 @@ function AdminDashboard({
           </div>
         )}
 
-        {/* PANTALLA DE REPORTES PERFECTAMENTE CORREGIDA */}
+        {/* PANTALLA DE REPORTES */}
         {tab === 'reports' && (
           <div className="space-y-6 w-full block">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -476,7 +475,6 @@ function AdminDashboard({
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {/* RANKING DE TÉCNICOS */}
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 space-y-4">
                 <h3 className="font-black text-white uppercase text-xs tracking-wider">👷 Ranking de Eficiencia Técnica</h3>
                 <div className="space-y-3">
@@ -498,7 +496,6 @@ function AdminDashboard({
                 </div>
               </div>
 
-              {/* CLIENTES VIP */}
               <div className="bg-[#0a3a37] p-5 rounded-2xl border border-teal-800/40 space-y-4">
                 <h3 className="font-black text-white uppercase text-xs tracking-wider">💎 Cartera de Clientes VIP (Inversión Semanal)</h3>
                 <div className="space-y-3">
@@ -542,18 +539,16 @@ function AdminDashboard({
             </form>
 
             <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-3">
-              <h3 className="font-bold text-white uppercase text-[11px]">📦 Inventario Físico Actual y Modificación de Valores</h3>
+              <h3 className="font-bold text-white uppercase text-[11px]">📦 Inventario Físico Actual</h3>
               <div className="space-y-2">
                 {catalog.map((item) => (
                   <div key={item.id} className="p-2.5 bg-[#042120] rounded-xl border border-teal-900/60 grid grid-cols-12 gap-2 items-center font-bold">
                     <span className="col-span-5 text-teal-200">{item.label}</span>
-                    <div className="col-span-3 flex items-center gap-1">
-                      <span className="text-teal-600 font-mono">$</span>
-                      <input type="number" value={item.price} onChange={() => {}} disabled className="w-full p-1 bg-[#0a3a37]/50 border border-teal-900 rounded text-right text-[#ecc245] opacity-80" />
+                    <div className="col-span-3 text-right text-[#ecc245] font-mono pr-2">
+                      ${item.price.toLocaleString('es-CL')}
                     </div>
-                    <div className="col-span-3 flex items-center gap-1">
-                      <span className="text-teal-600 text-[9px]">Cant.</span>
-                      <input type="number" value={item.stock} onChange={() => {}} disabled className="w-full p-1 bg-[#0a3a37]/50 border border-teal-900 rounded text-center text-white opacity-80" />
+                    <div className="col-span-3 text-center text-white font-mono">
+                      {item.stock} uds
                     </div>
                     <div className="col-span-1 text-center">
                       <button type="button" onClick={() => { if(confirm(`¿Desea eliminar ${item.label}?`)) onDeleteProduct(item.id); }} className="text-red-400 hover:text-red-500 text-sm font-sans">🗑️</button>
@@ -611,7 +606,7 @@ function AdminDashboard({
 }
 
 // ==========================================
-// 5. TERMINAL DEL TÉCNICO
+// 5. TERMINAL DEL TÉCNICO (CONTRACTOR APP)
 // ==========================================
 function TechnicianApp({ setView, techJobs, onSubmitToAdmin }) {
   const [techFilter, setTechFilter] = useState('Carlos Silva (Móvil 2)'); 
@@ -917,7 +912,6 @@ const AppointmentPage = ({ currentUser, appointments, blockedDates, onSendAppoin
               <option value="Ampliación de Cobertura Domo">Ampliación de Cobertura Domo</option>
               <option value="Mantención de Enlaces y Conectividad">Mantención de Enlaces y Conectividad</option>
               <option value="Revisión Técnica por Falla o Alerta">Revisión Técnica por Falla o Alerta</option>
-              <option value="Auditoría y Configuración de Seguridad AI">Auditoría y Configuración de Seguridad AI</option>
             </select>
           </div>
           <div className="space-y-2">
@@ -964,6 +958,9 @@ const HelpPage = ({ currentUser, onSendAppointment }) => {
   );
 };
 
+// ==========================================
+// 7. COMPONENTE RAÍZ (ORQUESTADOR DE ESTADO)
+// ==========================================
 export default function App() {
   const [view, setView] = useState('landing');
   
