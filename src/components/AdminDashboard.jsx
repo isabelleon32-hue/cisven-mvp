@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { BrandLogo } from './auth/Login'; // O desde donde decidamos importar el logo común
 
 export default function AdminDashboard({ 
   setView, catalog, onAddProduct, onDeleteProduct, 
@@ -27,8 +26,10 @@ export default function AdminDashboard({
   
   const staff = ['Sin Asignar', 'Juan Pérez (Móvil 1)', 'Carlos Silva (Móvil 2)', 'Andrés León (Móvil 3)'];
 
-  const activeAppointments = appointments.filter(app => app.status === 'Asignado' || app.status === 'Pendiente Despacho' || app.status === 'En Ruta');
-  const reviewAppointments = appointments.filter(app => app.status === 'Revisión Técnico');
+  // Validar que appointments sea un arreglo antes de filtrar para evitar crasheos
+  const safeAppointments = Array.isArray(appointments) ? appointments : [];
+  const activeAppointments = safeAppointments.filter(app => app && (app.status === 'Asignado' || app.status === 'Pendiente Despacho' || app.status === 'En Ruta'));
+  const reviewAppointments = safeAppointments.filter(app => app && app.status === 'Revisión Técnico');
 
   const handleCreateProduct = (e) => {
     e.preventDefault();
@@ -42,7 +43,7 @@ export default function AdminDashboard({
     e.preventDefault();
     if (!extName || !extAddr || !extPhone || !extDate) return alert('Complete todos los campos de la cita externa.');
     
-    const existingCount = appointments.filter(app => app.date === extDate).length;
+    const existingCount = safeAppointments.filter(app => app && app.date === extDate).length;
     if (existingCount >= 6) return alert('🚫 No se puede agendar. Esta fecha ya alcanzó el tope máximo de 6 visitas.');
     if (blockedDates.includes(extDate)) return alert('🔒 Esta fecha está bloqueada manualmente por la administración.');
 
@@ -62,7 +63,7 @@ export default function AdminDashboard({
           <nav className="flex flex-col gap-1.5 pt-4">
             <button type="button" onClick={() => { setTab('ops'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'ops' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📊 Tráfico Operativo</button>
             <button type="button" onClick={() => { setTab('price'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'price' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📦 Catálogo y Tarifas</button>
-            <button type="button" onClick={() => { setTab('users'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'users' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>👥 Abonados ({users.length})</button>
+            <button type="button" onClick={() => { setTab('users'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'users' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>👥 Abonados ({Array.isArray(users) ? users.length : 0})</button>
             <button type="button" onClick={() => { setTab('reports'); setSelectedUserFolder(null); }} className={`w-full text-left p-2 rounded-lg flex items-center gap-2 ${tab === 'reports' ? 'bg-[#085a4f] text-white' : 'opacity-70 hover:bg-[#042120]'}`}>📈 Reportes de Producción</button>
           </nav>
         </div>
@@ -107,8 +108,21 @@ export default function AdminDashboard({
                         <button 
                           type="button" 
                           onClick={() => {
-                            onArchiveJob(app.id, app.user, app.technician, app.techObservation, app.service, app.price || 45000, app.meters || 15);
-                            alert('✓ Órden archivada con éxito en el historial y sumada al panel de analíticas.');
+                            // Validamos y limpiamos los datos antes de enviarlos al App.jsx para evitar la pantalla blanca
+                            const safeId = app.id;
+                            const safeUser = app.user || 'Abonado General';
+                            const safeTech = app.technician || 'Sin Asignar';
+                            const safeObs = app.techObservation || 'Orden procesada.';
+                            const safeService = app.service || 'Servicio Técnico';
+                            const safePrice = parseInt(app.price) || 45000;
+                            const safeMeters = parseInt(app.meters) || 15;
+
+                            if (typeof onArchiveJob === 'function') {
+                              onArchiveJob(safeId, safeUser, safeTech, safeObs, safeService, safePrice, safeMeters);
+                              alert('✓ Órden archivada con éxito en el historial y sumada al panel de analíticas.');
+                            } else {
+                              alert('Error: La función de archivado no está conectada correctamente.');
+                            }
                           }}
                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2 rounded-lg uppercase text-[10px] tracking-wider"
                         >
@@ -160,7 +174,7 @@ export default function AdminDashboard({
                     </button>
                   </div>
                 </div>
-                {blockedDates.length > 0 && (
+                {Array.isArray(blockedDates) && blockedDates.length > 0 && (
                   <div className="pt-2 border-t border-teal-900">
                     <p className="text-[9px] font-black text-gray-400 uppercase">Días Cerrados:</p>
                     <div className="flex flex-wrap gap-1 mt-1">
@@ -178,9 +192,9 @@ export default function AdminDashboard({
               <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
                 <h3 className="font-bold text-teal-400 border-b border-teal-900 pb-2 uppercase flex justify-between items-center">
                   <span>📦 Cotizaciones Inteligentes de Clientes</span>
-                  <span className="bg-teal-950 text-teal-400 px-2.5 py-0.5 rounded-full font-black text-[10px]">{quotes.length}</span>
+                  <span className="bg-teal-950 text-teal-400 px-2.5 py-0.5 rounded-full font-black text-[10px]">{Array.isArray(quotes) ? quotes.length : 0}</span>
                 </h3>
-                {quotes.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin solicitudes pendientes</p> : quotes.map(q => (
+                {(!quotes || quotes.length === 0) ? <p className="italic text-teal-600 text-center py-4">Sin solicitudes pendientes</p> : quotes.map(q => (
                   <div key={q.id} className="p-3 bg-[#042120] border border-teal-900 rounded-xl flex flex-col space-y-2 shadow-lg">
                     <div>
                       <div className="flex justify-between items-start">
@@ -189,7 +203,7 @@ export default function AdminDashboard({
                           {q.status === 'Respondido' ? 'Enviado a Cliente' : q.status === 'Aceptado por Cliente' ? 'Aceptado por Cliente' : 'Por Estudiar'}
                         </span>
                       </div>
-                      <p className="text-gray-400 font-bold mt-1 text-xs">Precio Sugerido IA: <span className="text-teal-400 font-mono font-black">${q.total.toLocaleString('es-CL')}</span></p>
+                      <p className="text-gray-400 font-bold mt-1 text-xs">Precio Sugerido IA: <span className="text-teal-400 font-mono font-black">${q.total ? q.total.toLocaleString('es-CL') : '0'}</span></p>
                       {q.status === 'Respondido' && (
                         <p className="text-amber-400 font-mono font-bold text-[11px] mt-0.5">➔ Rebote de Valor Real: ${q.adjustedTotal?.toLocaleString('es-CL')}</p>
                       )}
@@ -246,12 +260,12 @@ export default function AdminDashboard({
               <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
                 <h3 className="font-bold text-red-400 border-b border-teal-900 pb-2 uppercase">📅 Citas Técnicas en Tránsito ({activeAppointments.length})</h3>
                 {activeAppointments.length === 0 ? <p className="italic text-teal-600 text-center py-4">Sin órdenes activas en tránsito.</p> : activeAppointments.map(app => {
-                  const dayTotal = appointments.filter(a => a.date === app.date).length;
+                  const dayTotal = safeAppointments.filter(a => a && a.date === app.date).length;
                   return (
                     <div key={app.id} className="p-3 bg-[#042120] border border-teal-900 rounded-xl space-y-2">
                       <div className="space-y-0.5">
                         <div className="flex justify-between items-center">
-                          <p className="font-black text-white">{app.user} - <span className="text-[#ecc245]">"{app.service}"</span></p>
+                          <p className="font-black text-white">{app.user} - <span className="text-teal-300">"{app.service}"</span></p>
                           <span className="bg-teal-950 text-teal-400 px-2 py-0.5 rounded font-mono text-[9px]">📅 {app.date} ({dayTotal}/6 Cupos)</span>
                         </div>
                         <p className="text-[10px] text-teal-400">📍 Dirección: <span className="text-white font-bold">{app.address}</span></p>
@@ -373,11 +387,11 @@ export default function AdminDashboard({
             <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-3">
               <h3 className="font-bold text-white uppercase text-[11px]">📦 Inventario Físico Actual</h3>
               <div className="space-y-2">
-                {catalog.map((item) => (
+                {Array.isArray(catalog) && catalog.map((item) => (
                   <div key={item.id} className="p-2.5 bg-[#042120] rounded-xl border border-teal-900/60 grid grid-cols-12 gap-2 items-center font-bold">
                     <span className="col-span-5 text-teal-200">{item.label}</span>
                     <div className="col-span-3 text-right text-[#ecc245] font-mono pr-2">
-                      ${item.price.toLocaleString('es-CL')}
+                      ${item.price ? item.price.toLocaleString('es-CL') : '0'}
                     </div>
                     <div className="col-span-3 text-center text-white font-mono">
                       {item.stock} uds
@@ -394,7 +408,7 @@ export default function AdminDashboard({
 
         {tab === 'users' && !selectedUserFolder && (
           <div className="bg-[#0a3a37] p-4 rounded-2xl border border-teal-800/40 space-y-2">
-            {users.map(u => (
+            {Array.isArray(users) && users.map(u => (
               <div key={u.id} onClick={() => setSelectedUserFolder(u)} className="p-3 bg-[#042120] hover:bg-[#07302e] border border-teal-900 rounded-xl flex justify-between items-center cursor-pointer">
                 <div>
                   <p className="font-black text-white">{u.name}</p>
