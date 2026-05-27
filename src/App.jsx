@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
-// Importación de componentes modulares y pantallas operativas
+// Componentes del Núcleo Operativo
 import Login from './components/auth/Login';
 import AdminDashboard from './components/AdminDashboard';
 import TechnicianApp from './components/TechnicianApp';
 
-// Importación de tus layouts estructurales nativos
+// Tus Layouts Estructurales Nativos (Restaurados al 100%)
 import MainLayout from './components/layout/MainLayout';
 import SmartQuoter from './components/quoter/SmartQuoter';
 
@@ -44,7 +44,7 @@ export default function App() {
     customerSpend: {} 
   });
 
-  // Sincronización de Persistencia de Datos
+  // Sincronización Inmediata de Datos
   useEffect(() => { localStorage.setItem('cisven_catalog', JSON.stringify(cameraCatalog)); }, [cameraCatalog]);
   useEffect(() => { localStorage.setItem('cisven_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('cisven_quotes', JSON.stringify(quotes)); }, [quotes]);
@@ -53,7 +53,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('cisven_analytics', JSON.stringify(analytics)); }, [analytics]);
 
   // ==========================================
-  // MANEJADORES DE LOGICA CENTRAL
+  // PROCESADORES COMERCIALES Y OPERATIVOS
   // ==========================================
   const handleAddProduct = (label, price, stock) => {
     setCameraCatalog([...cameraCatalog, { id: Date.now(), label, price, stock }]);
@@ -107,12 +107,14 @@ export default function App() {
     setQuotes(quotes.filter(q => q.id !== quoteObject.id));
   };
 
+  // Sincronización estricta del cierre técnico hacia la central
   const handleUpdateTechReport = (id, reportText, usedHardware, meters) => {
-    setAppointments(appointments.map(item => 
+    setAppointments(prevApps => prevApps.map(item => 
       item.id === id ? { ...item, status: 'Revisión Técnico', techObservation: reportText, meters: meters } : item
     ));
   };
 
+  // ARCHIVADO Y CIERRE FINAL DE ORDEN EN CENTRAL (REPARADO Y BLINDADO)
   const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName, ticketPrice, ticketMeters) => {
     setAppointments(prevApps => prevApps.filter(j => j.id !== id));
     
@@ -126,7 +128,7 @@ export default function App() {
                 date: new Date().toLocaleDateString('es-CL'), 
                 type: serviceName || 'Servicio Técnico', 
                 technician: technicianName || 'Técnico CISVEN', 
-                detail: finalObservation || 'Trabajo cerrado sin incidencias.' 
+                detail: finalObservation || 'Instalación completada sin novedades.' 
               }, 
               ...(u.historyLog || [])
             ] 
@@ -151,7 +153,7 @@ export default function App() {
   };
 
   // ==========================================
-  // MANEJADORES DE ENRUTAMIENTO Y SESIÓN
+  // MANEJADORES DE INTERFAZ Y SESIÓN
   // ==========================================
   const handleLoginSuccess = (session) => {
     setUserSession(session);
@@ -166,12 +168,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#042120] w-full text-white overflow-x-hidden">
+    <div className="min-h-screen bg-[#042120] w-full text-white">
       {view === 'landing' && (
         <Login onLoginSuccess={handleLoginSuccess} />
       )}
 
-      {/* PANEL ADMINISTRATIVO: Escalable en pantalla completa (PC y tablet) */}
+      {/* CONSOLA CENTRAL ADMINISTRATIVA (Pantalla completa Nativa) */}
       {view === 'admin-ops' && userSession?.role === 'admin' && (
         <AdminDashboard 
           setView={setView} catalog={cameraCatalog} 
@@ -185,28 +187,20 @@ export default function App() {
         />
       )}
 
-      {/* TERMINAL DEL TÉCNICO: Forzado a entorno Mobile nativo */}
+      {/* CONSOLA OPERATIVA DEL TÉCNICO (Mobile Responsivo Nativo) */}
       {view === 'tecnico-app' && userSession?.role === 'tech' && (
-        <div className="min-h-screen bg-[#042120] flex justify-center items-start">
-          <div className="w-full max-w-md min-h-screen bg-[#021312] shadow-2xl border-x border-teal-900/40">
-            <TechnicianApp 
-              setView={handleLogout} 
-              appointments={appointments} 
-              onUpdateTechReport={handleUpdateTechReport} 
-            />
-          </div>
-        </div>
+        <TechnicianApp 
+          setView={handleLogout} 
+          appointments={appointments} 
+          onUpdateTechReport={handleUpdateTechReport} 
+        />
       )}
 
-      {/* PORTAL DEL CLIENTE / ABONADO: Envuelto en su MainLayout Mobile nativo */}
+      {/* ENTORNO CLIENTE / COTIZADOR INTELIGENTE (Visión Original Restaurada de Extremo a Extremo) */}
       {view === 'client-quoter' && userSession?.role === 'client' && (
-        <div className="min-h-screen bg-[#042120] flex justify-center items-start">
-          <div className="w-full max-w-md min-h-screen shadow-2xl">
-            <MainLayout onLogout={handleLogout}>
-              <SmartQuoter catalog={cameraCatalog} onSendQuote={handleSendQuote} />
-            </MainLayout>
-          </div>
-        </div>
+        <MainLayout onLogout={handleLogout}>
+          <SmartQuoter catalog={cameraCatalog} onSendQuote={handleSendQuote} />
+        </MainLayout>
       )}
     </div>
   );
