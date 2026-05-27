@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
-// Componentes del Núcleo Operativo
+// Importación de componentes modulares y pantallas operativas
 import Login from './components/auth/Login';
 import AdminDashboard from './components/AdminDashboard';
 import TechnicianApp from './components/TechnicianApp';
 
-// Tus Layouts Estructurales Nativos (Restaurados al 100%)
+// Importación de tus layouts estructurales nativos (Visión de ancho completo)
 import MainLayout from './components/layout/MainLayout';
 import SmartQuoter from './components/quoter/SmartQuoter';
 
@@ -44,7 +44,7 @@ export default function App() {
     customerSpend: {} 
   });
 
-  // Sincronización Inmediata de Datos
+  // Sincronización Automática de Datos (Persistencia Local)
   useEffect(() => { localStorage.setItem('cisven_catalog', JSON.stringify(cameraCatalog)); }, [cameraCatalog]);
   useEffect(() => { localStorage.setItem('cisven_users', JSON.stringify(users)); }, [users]);
   useEffect(() => { localStorage.setItem('cisven_quotes', JSON.stringify(quotes)); }, [quotes]);
@@ -53,7 +53,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('cisven_analytics', JSON.stringify(analytics)); }, [analytics]);
 
   // ==========================================
-  // PROCESADORES COMERCIALES Y OPERATIVOS
+  // MANEJADORES DE LÓGICA OPERATIVA
   // ==========================================
   const handleAddProduct = (label, price, stock) => {
     setCameraCatalog([...cameraCatalog, { id: Date.now(), label, price, stock }]);
@@ -107,14 +107,12 @@ export default function App() {
     setQuotes(quotes.filter(q => q.id !== quoteObject.id));
   };
 
-  // Sincronización estricta del cierre técnico hacia la central
   const handleUpdateTechReport = (id, reportText, usedHardware, meters) => {
     setAppointments(prevApps => prevApps.map(item => 
       item.id === id ? { ...item, status: 'Revisión Técnico', techObservation: reportText, meters: meters } : item
     ));
   };
 
-  // ARCHIVADO Y CIERRE FINAL DE ORDEN EN CENTRAL (REPARADO Y BLINDADO)
   const handleAdminArchiveJob = (id, userName, technicianName, finalObservation, serviceName, ticketPrice, ticketMeters) => {
     setAppointments(prevApps => prevApps.filter(j => j.id !== id));
     
@@ -153,7 +151,7 @@ export default function App() {
   };
 
   // ==========================================
-  // MANEJADORES DE INTERFAZ Y SESIÓN
+  // MANEJADORES DE RUTA Y CONTROL DE ACCESO
   // ==========================================
   const handleLoginSuccess = (session) => {
     setUserSession(session);
@@ -173,7 +171,7 @@ export default function App() {
         <Login onLoginSuccess={handleLoginSuccess} />
       )}
 
-      {/* CONSOLA CENTRAL ADMINISTRATIVA (Pantalla completa Nativa) */}
+      {/* CONSOLA CENTRAL ADMINISTRATIVA (Pantalla Completa Original) */}
       {view === 'admin-ops' && userSession?.role === 'admin' && (
         <AdminDashboard 
           setView={setView} catalog={cameraCatalog} 
@@ -196,7 +194,7 @@ export default function App() {
         />
       )}
 
-      {/* ENTORNO CLIENTE / COTIZADOR INTELIGENTE (Visión Original Restaurada de Extremo a Extremo) */}
+      {/* PORTAL DEL CLIENTE ORIGINAL (Ancho completo, fluido y expansivo) */}
       {view === 'client-quoter' && userSession?.role === 'client' && (
         <MainLayout onLogout={handleLogout}>
           <SmartQuoter catalog={cameraCatalog} onSendQuote={handleSendQuote} />
