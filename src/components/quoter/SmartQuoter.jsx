@@ -1,265 +1,265 @@
 import React, { useState } from 'react';
 
-export default function SmartQuoter({ catalog, onSendQuote, onManualSchedule }) {
-  // Pestañas del entorno cliente adaptado a celular
-  const [activeTab, setActiveTab] = useState('quote'); 
-  
-  // Estados del Cotizador
+export default function SmartQuoter({ catalog, onSendQuote }) {
+  // Pasos del cotizador interactivo
   const [step, setStep] = useState(1);
-  const [selectedCam, setSelectedCam] = useState('');
-  const [clientAddress, setClientAddress] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
+  
+  // Estados de los inputs reales del formulario
+  const [companyName, setCompanyName] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [companySize, setCompanySize] = useState('');
+  const [contactInfo, setContactInfo] = useState('');
+  
+  // Selección de hardware y metrajes reales
+  const [selectedCamId, setSelectedCamId] = useState('2'); // Por defecto 1080p
+  const [cameraCount, setCameraCount] = useState(4);
   const [meters, setMeters] = useState(15);
+  const [complexHeight, setComplexHeight] = useState('Baja');
 
-  // Estados de la Agenda
-  const [bookingDate, setBookingDate] = useState('');
-  const [bookingService, setBookingService] = useState('Instalación de Sistema Nuevo');
-
-  // Estados del Botón de Pánico y Alertas
-  const [panicActive, setPanicActive] = useState(false);
-  const [observation, setObservation] = useState('');
-
+  // Catálogo de respaldo por si el estado global no carga
   const activeCatalog = Array.isArray(catalog) ? catalog : [
     { id: 1, label: '720p Básica Estándar', price: 25000, stock: 45 }, 
     { id: 2, label: '1080p Domo Alta Def.', price: 45000, stock: 30 }, 
     { id: 3, label: '4K Profesional + AI', price: 95000, stock: 12 }
   ];
 
-  // Ejecutar el envío de la cotización real a la mesa del Admin
-  const handleQuoteSubmit = () => {
-    if (!selectedCam || !clientAddress || !clientPhone) {
-      return alert('Por favor, completa todos los campos para generar la cotización.');
+  // ==========================================
+  // CÁLCULO DE VALORES EN TIEMPO REAL
+  // ==========================================
+  const currentCam = activeCatalog.find(c => c.id === parseInt(selectedCamId)) || activeCatalog[1];
+  const hardwareBasePrice = currentCam.price * cameraCount;
+  const deploymentPrice = (meters * 1200) + (complexHeight === 'Alta' ? 35000 : 15000);
+  const totalEstimated = hardwareBasePrice + deploymentPrice;
+
+  // Enviar datos reales a la Mesa de Control Operativo del Admin
+  const handleTriggerQuote = () => {
+    if (!companyName.trim() || !contactInfo.trim()) {
+      alert('⚠️ Por favor ingresa el Nombre de la Empresa y el Contacto Operativo en el Paso 1.');
+      setStep(1);
+      return;
     }
-    const targetCam = activeCatalog.find(c => c.id === parseInt(selectedCam));
-    const totalEstimado = (targetCam ? targetCam.price : 45000) + (meters * 1200);
 
-    onSendQuote(
-      'Abonado Digital',
-      'Residencial Express',
-      targetCam ? targetCam.label : 'Cámara Estándar',
-      totalEstimado,
-      clientAddress,
-      parseInt(meters),
-      clientPhone
-    );
-    alert('✨ Solicitud de cotización enviada con éxito a la Mesa de Control Central.');
-    setStep(1);
-  };
-
-  // Ejecutar el agendamiento directo desde el celular del cliente
-  const handleBookingSubmit = (e) => {
-    e.preventDefault();
-    if (!bookingDate || !clientAddress || !clientPhone) {
-      return alert('Complete la fecha, dirección y teléfono para agendar.');
+    if (typeof onSendQuote === 'function') {
+      const summaryHardware = `${cameraCount}x ${currentCam.label}`;
+      onSendQuote(
+        companyName,
+        `Industrial: ${industry || 'General'}`,
+        summaryHardware,
+        totalEstimated,
+        `Sede/Despliegue (${companySize || 'Estándar'})`,
+        parseInt(meters),
+        contactInfo
+      );
+      
+      alert('🚀 ¡Cotización enviada con éxito! Los datos acaban de ingresar en tiempo real a la Mesa de Control Central del Administrador.');
+      
+      // Limpiar formulario y regresar al inicio
+      setCompanyName(''); setContactInfo(''); setIndustry(''); setCompanySize('');
+      setStep(1);
+    } else {
+      alert('Error: La función de enlace con el Administrador no está conectada.');
     }
-    onManualSchedule('Abonado Digital', bookingService, bookingDate, clientAddress, clientPhone);
-    alert('📅 Cita agendada con éxito. Un técnico será asignado por la Central.');
-    setBookingDate('');
-  };
-
-  // Gatillo del Botón de Emergencia / Pánico
-  const triggerPanic = () => {
-    setPanicActive(true);
-    alert(`🚨 ¡ALERTA DE EMERGENCIA ENVIADA! La central CISVEN ha recibido tu geolocalización. Observación: ${observation || 'Sin comentarios adicionales.'}`);
-    // Aquí se limpia el cuadro después del envío
-    setObservation('');
-    setTimeout(() => setPanicActive(false), 5000);
   };
 
   return (
-    <div className="min-h-screen bg-[#021312] text-zinc-100 font-sans p-4 pb-24 flex justify-center items-start w-full">
-      {/* Contenedor con comportamiento y tamaño estricto de Teléfono Celular */}
-      <div className="w-full max-w-md bg-[#0a3a37] rounded-3xl border border-teal-900 shadow-2xl overflow-hidden flex flex-col min-h-[80vh]">
+    <div className="w-full min-h-screen bg-zinc-50 text-zinc-950 font-sans antialiased p-4 md:p-8">
+      <div className="w-full max-w-7xl mx-auto space-y-6">
         
-        {/* Cabecera de la App del Cliente */}
-        <div className="p-4 bg-[#042120] border-b border-teal-950 flex justify-between items-center">
-          <div>
-            <h2 className="text-xs font-black text-white uppercase tracking-widest">🛡️ PORTAL ABONADO</h2>
-            <p className="text-[9px] text-teal-400 font-bold uppercase">CISVEN Seguridad Activa</p>
-          </div>
-          <span className="bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono text-[9px] px-2 py-0.5 rounded-full font-bold">• En Línea</span>
+        {/* Encabezado Principal */}
+        <div className="max-w-3xl">
+          <p className="mb-2 inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-0.5 text-xs font-medium text-zinc-600 shadow-sm">
+            Smart Quoter Activo
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
+            Cotización inteligente para tu empresa
+          </h1>
+          <p className="mt-1 text-xs text-zinc-500">
+            Completa los parámetros reales. Los cálculos de hardware y despliegue se actualizan al instante.
+          </p>
         </div>
 
-        {/* Cuerpo Variable según la Pestaña Activa de la App Web */}
-        <div className="p-4 flex-1 overflow-y-auto space-y-4">
+        {/* Indicador de Pasos Interactivo */}
+        <div className="grid grid-cols-4 bg-white border border-zinc-200 rounded-xl p-2 shadow-sm text-center font-bold text-[10px] sm:text-xs">
+          {[
+            { id: 1, label: '1. Perfil' },
+            { id: 2, label: '2. Servicios' },
+            { id: 3, label: '3. Alcance' },
+            { id: 4, label: '4. Resumen' }
+          ].map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setStep(s.id)}
+              className={`py-2 rounded-lg transition-all ${step === s.id ? 'bg-zinc-900 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Grilla Principal del Cotizador */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           
-          {/* VISTA 1: COTIZADOR INTELIGENTE */}
-          {activeTab === 'quote' && (
-            <div className="space-y-4">
-              <div className="border-b border-teal-900 pb-2">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wide">📦 Generar Nueva Cotización</h3>
-                <p className="text-[10px] text-teal-300">Paso {step} de 3 para el despliegue técnico.</p>
-              </div>
-
-              {step === 1 && (
-                <div className="space-y-3">
-                  <label className="block text-[10px] uppercase font-bold text-gray-400">1. Selecciona el Tipo de Cámara:</label>
-                  <select 
-                    value={selectedCam} 
-                    onChange={e => setSelectedCam(e.target.value)}
-                    className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-bold focus:outline-none text-xs"
-                  >
-                    <option value="">-- Elige un Equipo de Bodega --</option>
-                    {activeCatalog.map(c => (
-                      <option key={c.id} value={c.id}>{c.label} (${c.price.toLocaleString('es-CL')})</option>
-                    ))}
-                  </select>
-                  <button type="button" onClick={() => { if(selectedCam) setStep(2); else alert('Seleccione una cámara'); }} className="w-full bg-[#085a4f] text-white py-2.5 rounded-xl font-bold uppercase text-[10px] mt-2">Siguiente Paso →</button>
-                </div>
-              )}
-
-              {step === 2 && (
-                <div className="space-y-3">
-                  <label className="block text-[10px] uppercase font-bold text-gray-400">2. Metraje Estimado de Cableado (Metros):</label>
-                  <input 
-                    type="number" value={meters} onChange={e => setMeters(e.target.value)}
-                    className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-mono font-bold text-xs"
-                  />
-                  <div className="flex gap-2 pt-2">
-                    <button type="button" onClick={() => setStep(1)} className="w-1/2 bg-teal-950 text-teal-400 py-2.5 rounded-xl font-bold uppercase text-[10px]">Atrás</button>
-                    <button type="button" onClick={() => setStep(3)} className="w-1/2 bg-[#085a4f] text-white py-2.5 rounded-xl font-bold uppercase text-[10px]">Siguiente →</button>
+          {/* Columna de Controles Formularios (Izquierda) */}
+          <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm min-h-[320px] flex flex-col justify-between">
+            
+            {/* PASO 1: PERFIL CON INPUTS REALES */}
+            {step === 1 && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold text-zinc-900 border-b border-zinc-100 pb-1.5 uppercase tracking-wider">🏢 Perfil de la organización</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">Nombre de la empresa *</label>
+                    <input 
+                      type="text" required placeholder="Ej: Seguridad ACME S.A." value={companyName} onChange={e => setCompanyName(e.target.value)}
+                      className="w-full p-2.5 border border-zinc-300 rounded-lg text-xs bg-zinc-50 font-medium focus:outline-none focus:border-zinc-900"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">Sector Industrial</label>
+                    <input 
+                      type="text" placeholder="Ej: Retail / Logística" value={industry} onChange={e => setIndustry(e.target.value)}
+                      className="w-full p-2.5 border border-zinc-300 rounded-lg text-xs bg-zinc-50 font-medium focus:outline-none focus:border-zinc-900"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">Tamaño aproximado / Sedes</label>
+                    <input 
+                      type="text" placeholder="Ej: 3 Oficinas / 50 empleados" value={companySize} onChange={e => setCompanySize(e.target.value)}
+                      className="w-full p-2.5 border border-zinc-300 rounded-lg text-xs bg-zinc-50 font-medium focus:outline-none focus:border-zinc-900"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">Contacto Operativo (Teléfono/Email) *</label>
+                    <input 
+                      type="text" required placeholder="Ej: +56912345678" value={contactInfo} onChange={e => setContactInfo(e.target.value)}
+                      className="w-full p-2.5 border border-zinc-300 rounded-lg text-xs bg-zinc-50 font-medium focus:outline-none focus:border-zinc-900"
+                    />
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {step === 3 && (
+            {/* PASO 2: SELECCIÓN DE HARDWARE REAL */}
+            {step === 2 && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold text-zinc-900 border-b border-zinc-100 pb-1.5 uppercase tracking-wider">📦 Selección de Tecnología</h3>
                 <div className="space-y-3">
-                  <label className="block text-[10px] uppercase font-bold text-gray-400">3. Datos de Ubicación y Contacto:</label>
-                  <input 
-                    type="text" placeholder="Dirección de Instalación" value={clientAddress} onChange={e => setClientAddress(e.target.value)}
-                    className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-bold text-xs"
-                  />
-                  <input 
-                    type="tel" placeholder="Teléfono Móvil de Contacto" value={clientPhone} onChange={e => setClientPhone(e.target.value)}
-                    className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-mono font-bold text-xs"
-                  />
-                  <div className="flex gap-2 pt-2">
-                    <button type="button" onClick={() => setStep(2)} className="w-1/2 bg-teal-950 text-teal-400 py-2.5 rounded-xl font-bold uppercase text-[10px]">Atrás</button>
-                    <button type="button" onClick={handleQuoteSubmit} className="w-1/2 bg-gradient-to-r from-emerald-500 to-teal-500 text-[#021312] py-2.5 rounded-xl font-black uppercase text-[10px] shadow-lg">Enviar a Central</button>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">Modelo de Cámara en Bodega:</label>
+                    <select 
+                      value={selectedCamId} onChange={e => setSelectedCamId(e.target.value)}
+                      className="w-full p-2.5 border border-zinc-300 rounded-lg bg-zinc-50 text-xs font-bold focus:outline-none focus:border-zinc-900"
+                    >
+                      {activeCatalog.map(c => (
+                        <option key={c.id} value={c.id}>{c.label} (${c.price.toLocaleString('es-CL')} c/u) - Stock: {c.stock}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">Cantidad de Puntos de Captura (Cámaras):</label>
+                    <input 
+                      type="number" min="1" max="64" value={cameraCount} onChange={e => setCameraCount(parseInt(e.target.value) || 1)}
+                      className="w-full p-2.5 border border-zinc-300 rounded-lg bg-zinc-50 text-xs font-mono font-bold focus:outline-none focus:border-zinc-900"
+                    />
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* VISTA 2: AGENDA DE VISITAS TÉCNICAS */}
-          {activeTab === 'agenda' && (
-            <form onSubmit={handleBookingSubmit} className="space-y-4">
-              <div className="border-b border-teal-900 pb-2">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wide">📅 Agendar Visita en Terreno</h3>
-                <p className="text-[10px] text-teal-300">Solicita asistencia técnica para tu sistema perimetral.</p>
               </div>
+            )}
 
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Tipo de Requerimiento:</label>
-                  <select 
-                    value={bookingService} onChange={e => setBookingService(e.target.value)}
-                    className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white text-xs font-bold"
-                  >
-                    <option value="Instalación de Sistema Nuevo">Instalación Completa</option>
-                    <option value="Mantención de Enlaces y Conectividad">Mantención / Reparación</option>
-                    <option value="Revisión Técnica por Falla o Alerta">Revisión por Falla Técnica</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Seleccionar Fecha:</label>
-                  <input 
-                    type="date" required value={bookingDate} onChange={e => setBookingDate(e.target.value)}
-                    className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white text-xs font-mono font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Confirmar Dirección de Terreno:</label>
-                  <input 
-                    type="text" required placeholder="Ej: Av Vespucio 1500, Maipú" value={clientAddress} onChange={e => setClientAddress(e.target.value)}
-                    className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white text-xs font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[9px] font-black text-gray-400 uppercase mb-1">Teléfono:</label>
-                  <input 
-                    type="tel" required placeholder="+569..." value={clientPhone} onChange={e => setClientPhone(e.target.value)}
-                    className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white text-xs font-mono font-bold"
-                  />
+            {/* PASO 3: ALCANCE TÉCNICO Y DESPLIEGUE */}
+            {step === 3 && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold text-zinc-900 border-b border-zinc-100 pb-1.5 uppercase tracking-wider">📐 Parámetros de Canalización y Altura</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">Metraje Estimado de Cableado (Mtrs):</label>
+                    <input 
+                      type="number" min="5" value={meters} onChange={e => setMeters(parseInt(e.target.value) || 0)}
+                      className="w-full p-2.5 border border-zinc-300 rounded-lg bg-zinc-50 text-xs font-mono font-bold focus:outline-none focus:border-zinc-900"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-zinc-700">Complejidad de Altura / Soporte:</label>
+                    <select 
+                      value={complexHeight} onChange={e => setComplexHeight(e.target.value)}
+                      className="w-full p-2.5 border border-zinc-300 rounded-lg bg-zinc-50 text-xs font-bold focus:outline-none focus:border-zinc-900"
+                    >
+                      <option value="Baja">Baja (Menos de 3 metros / Muros estándar)</option>
+                      <option value="Alta">Alta (Postes de acero / Techos industriales / Certificación)</option>
+                    </select>
+                  </div>
                 </div>
               </div>
+            )}
 
-              <button type="submit" className="w-full bg-[#085a4f] hover:bg-[#0b6b5e] text-white py-3 rounded-xl font-black uppercase text-[10px] tracking-wider transition-colors shadow-md">
-                Confirmar y Registrar Solicitud
-              </button>
-            </form>
-          )}
-
-          {/* VISTA 3: BOTÓN DE PÁNICO Y ALERTAS OPERATIVAS */}
-          {activeTab === 'panic' && (
-            <div className="space-y-5 text-center py-2">
-              <div className="border-b border-teal-900 pb-2 text-left">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wide">🚨 Central de Emergencias e Incidencias</h3>
-                <p className="text-[10px] text-red-400 font-bold">Enlace de comunicación crítico con la Mesa de Control Central.</p>
-              </div>
-
-              {/* CUADRO DE OBSERVACIONES DE EMERGENCIA */}
-              <div className="text-left space-y-1.5">
-                <label className="block text-[9px] font-black uppercase text-gray-400 tracking-wider">
-                  📝 Cuadro de Observación / Reporte de Falla:
-                </label>
-                <textarea 
-                  value={observation}
-                  onChange={e => setObservation(e.target.value)}
-                  placeholder="Ej: Activación por sospecha perimetral o falla crítica en nodo 3..."
-                  rows="3"
-                  className="w-full p-3 bg-[#042120] border border-teal-950 rounded-xl text-white font-medium text-xs resize-none focus:outline-none focus:ring-1 focus:ring-red-500"
-                ></textarea>
-              </div>
-
-              {/* BOTÓN DE PÁNICO RADIAL INTERACTIVO */}
-              <div className="flex flex-col items-center justify-center pt-2">
-                <button
-                  type="button"
-                  onClick={triggerPanic}
-                  className={`w-32 h-32 rounded-full font-black text-xs uppercase tracking-widest transition-all duration-300 transform active:scale-95 shadow-2xl border-4 ${panicActive ? 'bg-red-500 text-white border-white animate-ping' : 'bg-gradient-to-b from-red-600 to-red-800 text-white border-red-950 hover:from-red-500 hover:to-red-700'}`}
-                >
-                  {panicActive ? 'ENVIADO' : '🚨 PÁNICO'}
-                </button>
-                <p className="text-[9px] text-gray-400 mt-4 font-bold uppercase tracking-wider animate-pulse">
-                  Mantén presionado o pulsa para despacho de patrulla/móvil
+            {/* PASO 4: RESUMEN DE TRANSMISIÓN */}
+            {step === 4 && (
+              <div className="space-y-3 text-center py-4">
+                <div className="text-3xl animate-bounce">⚡</div>
+                <h3 className="text-sm font-bold text-zinc-900 uppercase">Propuesta Técnica Estructurada</h3>
+                <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                  Todos los cálculos han sido procesados localmente. Al presionar el botón de envío, la orden se inyectará directamente en la Mesa del Administrador.
                 </p>
+                <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 text-left text-[11px] font-medium space-y-1 max-w-xs mx-auto">
+                  <p><span className="font-bold text-zinc-500">Empresa:</span> {companyName || 'No especificado'}</p>
+                  <p><span className="font-bold text-zinc-500">Hardware:</span> {cameraCount}x {currentCam.label}</p>
+                  <p><span className="font-bold text-zinc-500">Cableado:</span> {meters} Metros ({complexHeight})</p>
+                </div>
+              </div>
+            )}
+
+            {/* Botonera de Control de Flujo */}
+            <div className="flex justify-between items-center pt-4 border-t border-zinc-100 mt-6">
+              <button
+                type="button" disabled={step === 1} onClick={() => setStep(prev => prev - 1)}
+                className="px-4 py-2 text-xs font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 disabled:opacity-40 rounded-xl transition-all"
+              >
+                ← Anterior
+              </button>
+              
+              {step < 4 ? (
+                <button
+                  type="button" onClick={() => setStep(prev => prev + 1)}
+                  className="px-4 py-2 text-xs font-bold text-white bg-zinc-900 hover:bg-zinc-800 rounded-xl transition-all"
+                >
+                  Siguiente →
+                </button>
+              ) : (
+                <button
+                  type="button" onClick={handleTriggerQuote}
+                  className="px-5 py-2 text-xs font-black text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl shadow-md transition-all uppercase tracking-wider"
+                >
+                  ⚡ Enviar Propuesta a Central
+                </button>
+              )}
+            </div>
+
+          </div>
+
+          {/* Tarjeta de Resumen Estática (Derecha) - ACTUALIZACIÓN EN TIEMPO REAL */}
+          <div className="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">📊 Monitor de Costos Real</h3>
+            <div className="space-y-2 border-b border-zinc-100 pb-3 text-zinc-600 text-xs font-medium">
+              <div className="flex justify-between">
+                <span>Cámaras ({cameraCount} ud)</span>
+                <span className="font-mono font-bold text-zinc-900">${hardwareBasePrice.toLocaleString('es-CL')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Metraje Canalización</span>
+                <span className="font-mono font-bold text-zinc-900">${(meters * 1200).toLocaleString('es-CL')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Soporte Altura ({complexHeight})</span>
+                <span className="font-mono font-bold text-zinc-900">${(complexHeight === 'Alta' ? 35000 : 15000).toLocaleString('es-CL')}</span>
               </div>
             </div>
-          )}
+            <div className="flex justify-between items-center pt-1">
+              <span className="font-bold text-sm text-zinc-900">Total Estimado:</span>
+              <span className="text-xl font-black text-emerald-600 font-mono">${totalEstimated.toLocaleString('es-CL')}</span>
+            </div>
+          </div>
 
-        </div>
-
-        {/* MENÚ DE NAVEGACIÓN INFERIOR (TIPO APP DE TELÉFONO CELULAR) */}
-        <div className="bg-[#042120] border-t border-teal-950 h-16 grid grid-cols-3 font-bold text-[10px] uppercase">
-          <button 
-            type="button" 
-            onClick={() => setActiveTab('quote')}
-            className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'quote' ? 'text-emerald-400 font-black bg-black/20' : 'text-teal-600'}`}
-          >
-            <span className="text-sm">📦</span>
-            <span>Cotizar</span>
-          </button>
-          <button 
-            type="button" 
-            onClick={() => setActiveTab('agenda')}
-            className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'agenda' ? 'text-emerald-400 font-black bg-black/20' : 'text-teal-600'}`}
-          >
-            <span className="text-sm">📅</span>
-            <span>Agendar</span>
-          </button>
-          <button 
-            type="button" 
-            onClick={() => setActiveTab('panic')}
-            className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'panic' ? 'text-red-400 font-black bg-black/20' : 'text-teal-600'}`}
-          >
-            <span className="text-sm">🚨</span>
-            <span>Emergencia</span>
-          </button>
         </div>
 
       </div>
