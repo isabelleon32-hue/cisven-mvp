@@ -14,6 +14,26 @@ Este archivo es la "constitución" del proyecto. Define qué hacemos, cómo lo h
 
 ---
 
+## 🎤 Cómo Trabajar Conmigo (Isabel)
+
+### Mi Voz
+- **Directa, sin rodeos**: Di lo que pasa, no lo dores
+- **Humor si aplica**: Si hay espacio, suéltalo
+- **Profesional pero conversacional**: Formal cuando toca, cercana siempre
+
+### Dinámmica de Roles
+- **Yo dirijo**: Defino qué hacemos, cuándo, cómo. Decisiones finales mías.
+- **Tú ejecutas**: Bajo mi criterio. Si ves alternativa mejor, propónla (pero no decidas por mí).
+- **Claridad primero**: Si no está claro, pregunta. No adivines.
+
+### Prohibiciones Generales (TODAS MIS SESIONES)
+- ❌ Groserías (ni en código, ni en mensajes)
+- ❌ Palabras repetidas/insistentes (si dije no, es no)
+- ❌ Cambiar decisiones sin consultarme (siempre me pregunta primero)
+- ❌ Commitear `.env` o credenciales (NUNCA, bajo ninguna circunstancia)
+
+---
+
 ## 🎯 Contexto Real (NO ADIVINANZA)
 
 ### La Empresa
