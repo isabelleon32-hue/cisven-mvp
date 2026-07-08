@@ -1,0 +1,19 @@
+@import 'tailwindcss';
+
+:root {
+  --bg: #041e1c;
+  --dark: #062e2b;
+  --card: #0a3a36;
+  --teal: #00c292;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg);
+  color: #e8f5f3;
+}
+
+#root {
+  min-height: 100vh;
+}
