@@ -1,3 +1,11 @@
+# Environment variables (CRITICAL — never commit credentials)
+.env
+.env.local
+.env.*.local
+
+# Claude local config (never commit)
+.claude/settings.local.json
+
 # Logs
 logs
 *.log
@@ -10,15 +18,6 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-*.local
-
-# Environment variables (CRITICAL — never commit)
-.env
-.env.local
-.env.*.local
-
-# Claude local config (never commit)
-.claude/settings.local.json
 
 # Editor directories and files
 .vscode/*
