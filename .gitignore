@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Environment variables (CRITICAL — never commit)
+.env
+.env.local
+.env.*.local
+
+# Claude local config (never commit)
+.claude/settings.local.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
