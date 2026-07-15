@@ -486,7 +486,7 @@ function AbonadosActivos({ abonados, trabajos }) {
   const [expandido, setExpandido] = useState(null)
   return (
     <Card title="Abonados Activos" id="abonados">
-      {expandidos.length === 0 ? <p className="text-sm text-[#5a8a82]">Sin abonados registrados.</p> : (
+      {abonados.length === 0 ? <p className="text-sm text-[#5a8a82]">Sin abonados registrados.</p> : (
         <ul className="space-y-2">
           {abonados.map(a => {
             const historial = trabajos.filter(t => t.abonado_id === a.id && t.estado === 'finalizado')
