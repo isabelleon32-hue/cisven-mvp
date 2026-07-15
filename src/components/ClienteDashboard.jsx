@@ -431,8 +431,8 @@ export default function ClienteDashboard() {
   }
 
   return (
-    <div className="min-h-screen pb-20 flex items-center justify-center" style={{ backgroundColor: 'var(--bg)' }}>
-      <div className="w-full" style={{ maxWidth: 420 }}>
+    <div className="min-h-screen pb-20" style={{ backgroundColor: 'var(--bg)' }}>
+      <div style={{ maxWidth: 420, margin: '0 auto', width: '100%' }}>
         <header className="flex items-center justify-between px-4 py-4 border-b border-[#0f4a44]"
           style={{ backgroundColor: 'var(--dark)' }}>
           <div className="flex items-center gap-2">
