@@ -14,13 +14,18 @@ function BottomNav({ activa, onChange }) {
   ]
   return (
     <nav className="fixed bottom-0 left-0 right-0 border-t border-[#0f4a44] flex"
-      style={{ backgroundColor: 'var(--dark)', maxWidth: 420, margin: '0 auto', left: '50%', transform: 'translateX(-50%)' }}>
+      style={{ backgroundColor: 'var(--dark)', maxWidth: 420, margin: '0 auto', left: '50%', transform: 'translateX(-50%)', minHeight: 70 }}>
       {tabs.map(t => (
         <button key={t.id} onClick={() => onChange(t.id)}
-          className="flex-1 flex flex-col items-center py-2 text-xs transition"
-          style={{ color: activa === t.id ? 'var(--teal)' : '#5a8a82' }}>
-          <span className="text-lg">{t.icon}</span>
-          {t.label}
+          className="flex-1 flex flex-col items-center justify-center transition"
+          style={{
+            color: activa === t.id ? 'var(--teal)' : '#5a8a82',
+            padding: '8px 4px',
+            fontSize: '11px',
+            gap: '4px'
+          }}>
+          <span style={{ fontSize: '22px', lineHeight: 1 }}>{t.icon}</span>
+          <span style={{ lineHeight: 1.2, whiteSpace: 'nowrap' }}>{t.label}</span>
         </button>
       ))}
     </nav>
